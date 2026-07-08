@@ -1,7 +1,7 @@
 from shared.db import initialize, query, execute, LOCK, connect
 from shared.http import Handler, APIError, required, serve
 class Sales(Handler): pass
-def list_all(h): return 200,query('SELECT * FROM sales ORDER BY id DESC')
+def list_all(h): return 200,query("SELECT s.*,p.name prospect_name,v.brand||' '||v.model vehicle_name,se.name seller_name FROM sales s JOIN prospects p ON p.id=s.prospect_id JOIN vehicles v ON v.id=s.vehicle_id JOIN sellers se ON se.id=s.seller_id ORDER BY s.id DESC")
 def create(h):
     d=h._body(); required(d,'prospect_id','vehicle_id','seller_id','amount','status')
     if d['status'] not in ('completed','failed'): raise APIError(400,'Estado inválido')
@@ -20,4 +20,3 @@ def conversion(h):
     return 200,rows
 Sales.routes={('GET','/sales'):list_all,('POST','/sales'):create,('GET','/sales/conversion'):conversion}
 if __name__=='__main__': initialize(); serve(Sales,8002)
-

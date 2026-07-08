@@ -2,6 +2,10 @@ import json, os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+class ScalableThreadingHTTPServer(ThreadingHTTPServer):
+    request_queue_size = 256
+    daemon_threads = True
+
 class APIError(Exception):
     def __init__(self, status, message): self.status, self.message = status, message
 
@@ -47,5 +51,4 @@ def required(data, *fields):
 
 def serve(handler, default_port):
     port=int(os.getenv('PORT', default_port)); print(f'Servicio listo en :{port}', flush=True)
-    ThreadingHTTPServer(('0.0.0.0',port),handler).serve_forever()
-
+    ScalableThreadingHTTPServer(('0.0.0.0',port),handler).serve_forever()

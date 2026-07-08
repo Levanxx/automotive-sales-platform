@@ -30,6 +30,8 @@ services:
     environment:
       - N8N_SECURE_COOKIE=false
       - N8N_DIAGNOSTICS_ENABLED=false
+      - INACTIVITY_DAYS=${INACTIVITY_DAYS:-3}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-http://dashboard:8004/api/alerts}
     volumes:
       - n8n-data:/home/node/.n8n
       - ./n8n:/workflows:ro
@@ -45,4 +47,3 @@ volumes:
   app-data:
   n8n-data:
   oracle-data:
-

@@ -1,0 +1,10 @@
+[run]
+branch = True
+source = shared,services
+omit =
+    */__init__.py
+[report]
+exclude_lines =
+    if __name__ ?== ?['\"]__main__['\"]:
+    pragma: no cover
+show_missing = True

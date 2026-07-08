@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS insurance(
  expected_premium REAL NOT NULL CHECK(expected_premium>=0), actual_premium REAL,
  status TEXT NOT NULL CHECK(status IN ('prospected','sold')),
  FOREIGN KEY(sale_id) REFERENCES sales(id));
+CREATE TABLE IF NOT EXISTS performance_runs(
+ id INTEGER PRIMARY KEY AUTOINCREMENT, concurrency INTEGER NOT NULL, requests INTEGER NOT NULL,
+ success INTEGER NOT NULL, error_rate_percent REAL NOT NULL, duration_seconds REAL NOT NULL,
+ avg_ms REAL NOT NULL, p95_ms REAL NOT NULL, max_ms REAL NOT NULL,
+ acceptance INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS automation_alerts(
+ id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT NOT NULL, message TEXT NOT NULL,
+ payload TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 """
 
 def db_path(): return os.getenv('DATABASE_PATH', str(Path(__file__).parents[1] / 'automotive.db'))
@@ -30,11 +38,13 @@ def db_path(): return os.getenv('DATABASE_PATH', str(Path(__file__).parents[1] /
 def connect():
     path = db_path(); Path(path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, timeout=30); conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA foreign_keys=ON'); conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA foreign_keys=ON')
     return conn
 
 def initialize():
     with LOCK, connect() as conn:
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA synchronous=NORMAL')
         conn.executescript(SCHEMA)
         conn.executemany('INSERT OR IGNORE INTO sellers(id,name,email) VALUES(?,?,?)', [(1,'Ana Torres','ana@autos.pe'),(2,'Luis Vega','luis@autos.pe')])
         conn.executemany('INSERT OR IGNORE INTO vehicles(id,brand,model,year,price) VALUES(?,?,?,?,?)', [(1,'Toyota','Corolla',2026,24990),(2,'Kia','Sportage',2026,31990),(3,'Hyundai','Tucson',2025,29990)])
@@ -48,4 +58,3 @@ def query(sql, params=(), one=False):
 def execute(sql, params=()):
     with LOCK, connect() as conn:
         cur = conn.execute(sql, params); conn.commit(); return cur.lastrowid
-

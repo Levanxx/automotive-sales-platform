@@ -1,7 +1,7 @@
 from shared.db import initialize,query,execute
 from shared.http import Handler,APIError,required,serve
 class Insurance(Handler): pass
-def list_all(h): return 200,query('SELECT i.*,s.prospect_id FROM insurance i JOIN sales s ON s.id=i.sale_id ORDER BY i.id DESC')
+def list_all(h): return 200,query('SELECT i.*,s.prospect_id,p.name prospect_name FROM insurance i JOIN sales s ON s.id=i.sale_id JOIN prospects p ON p.id=s.prospect_id ORDER BY i.id DESC')
 def create(h):
     d=h._body(); required(d,'sale_id','type','expected_premium','status')
     if d['status'] not in ('prospected','sold'): raise APIError(400,'Estado inválido')
@@ -12,4 +12,3 @@ def create(h):
     return 201,query('SELECT * FROM insurance WHERE id=?',(iid,),one=True)
 Insurance.routes={('GET','/insurance'):list_all,('POST','/insurance'):create}
 if __name__=='__main__': initialize(); serve(Insurance,8003)
-

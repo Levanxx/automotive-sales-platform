@@ -20,14 +20,16 @@ Inicie Oracle con `docker compose --profile oracle up oracle`. Espere el estado 
 
 ## n8n
 
-Inicie con `docker compose --profile automation up n8n`, abra `http://localhost:5678` e importe los dos JSON de `n8n/`. Revise credenciales/canales de alerta y active los flujos. Las URLs internas ya apuntan a los servicios Compose.
+Copie `.env.example` como `.env`, configure `ALERT_WEBHOOK_URL` para Teams, Slack u otro receptor HTTP e inicie con `docker compose --profile automation up n8n`. Abra `http://localhost:5678`, importe los dos JSON de `n8n/` y active los flujos. Las URLs internas ya apuntan a los servicios Compose.
 
 ## Verificación
 
 ```bash
 python scripts/seed.py
 python -m unittest discover -s tests -v
+python scripts/integration_check.py
 python load-tests/sales_load.py --concurrency 50
 python load-tests/sales_load.py --concurrency 100
 ```
 
+Las pruebas de carga publican automáticamente sus resultados en la sección **Rendimiento** de la consola web.

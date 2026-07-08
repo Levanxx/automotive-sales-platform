@@ -9,13 +9,14 @@ docker compose up --build -d
 docker compose exec dashboard python scripts/seed.py
 ```
 
-Abra `http://localhost:8004`. Salud de servicios: puertos 8001–8004, ruta `/health`.
+Abra `http://localhost:8004`. La consola web permite gestionar prospectos, ventas, seguros, KPI y rendimiento. Salud de servicios: puertos 8001–8004, ruta `/health`.
 
 ## Calidad
 
 ```bash
 python -m unittest discover -s tests -v
 coverage run --branch -m unittest discover -s tests && coverage report --fail-under=80
+python scripts/integration_check.py
 python load-tests/sales_load.py --concurrency 50
 python load-tests/sales_load.py --concurrency 100
 ```
