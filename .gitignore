@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.db
+.coverage
+htmlcov/
+.env
+.DS_Store
+
