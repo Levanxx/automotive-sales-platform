@@ -31,4 +31,10 @@ python load-tests/sales_load.py --concurrency 100
 
 Ejemplos listos para copiar: [docs/API_EJEMPLOS.md](docs/API_EJEMPLOS.md).
 
+## Documentación de entrega
+
+- [Resumen de entrega](docs/ENTREGA_FINAL.md)
+- [Matriz de aceptación](docs/MATRIZ_ACEPTACION.md)
+- [Guía de demostración](docs/GUIA_DEMOSTRACION.md)
+
 Consulte [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) para Oracle y n8n.
