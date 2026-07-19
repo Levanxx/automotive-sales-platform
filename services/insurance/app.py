@@ -1,7 +1,13 @@
 from shared.db import initialize,query,execute
 from shared.http import Handler,APIError,required,serve
 class Insurance(Handler): pass
-def list_all(h): return 200,query('SELECT i.*,s.prospect_id,p.name prospect_name FROM insurance i JOIN sales s ON s.id=i.sale_id JOIN prospects p ON p.id=s.prospect_id ORDER BY i.id DESC')
+def list_all(h): return 200,query('''SELECT i.*,s.prospect_id,p.name prospect_name,
+  v.brand||' '||v.model vehicle_name
+FROM insurance i
+JOIN sales s ON s.id=i.sale_id
+JOIN prospects p ON p.id=s.prospect_id
+JOIN vehicles v ON v.id=s.vehicle_id
+ORDER BY i.id DESC''')
 
 def create(h):
 
