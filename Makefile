@@ -1,4 +1,4 @@
-.PHONY: run test coverage integration seed load50 load100
+.PHONY: run test coverage integration seed load50 load100 stress regression
 run:
 	docker compose up --build
 test:
@@ -13,3 +13,5 @@ load50:
 	python load-tests/sales_load.py --concurrency 50
 load100:
 	python load-tests/sales_load.py --concurrency 100
+stress:
+	python scripts/stress_check.py

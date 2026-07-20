@@ -53,7 +53,7 @@ class ResourceSampler:
 
 def prepare(base,i):
     prospect={'name':f'Carga {i}','email':f'load{i}-{time.time_ns()}@test.pe','phone':'900000000','vehicle_interest':'Toyota Corolla','seller_id':1}
-    req=Request(base.replace(':8002',':8001')+'/prospects',json.dumps(prospect).encode(),{'Content-Type':'application/json'},method='POST')
+    req=Request(base+'/prospects',json.dumps(prospect).encode(),{'Content-Type':'application/json'},method='POST')
     with urlopen(req,timeout=10) as r: return json.load(r)['id']
 def post(base,pid):
     sale={'prospect_id':pid,'vehicle_id':1,'seller_id':1,'amount':24990,'status':'completed'}
@@ -62,9 +62,9 @@ def post(base,pid):
     with urlopen(req,timeout=10) as r: status=r.status
     return status,(time.perf_counter()-t)*1000
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--concurrency',type=int,choices=[50,100],required=True); p.add_argument('--url',default='http://localhost:8002'); p.add_argument('--resource-pid',type=int,action='append',default=[],help='PID de servicio a medir; puede repetirse'); a=p.parse_args()
+    p=argparse.ArgumentParser(); p.add_argument('--concurrency',type=int,choices=[50,100],required=True); p.add_argument('--url',default='http://localhost:8002'); p.add_argument('--prospects-url',default='http://localhost:8001'); p.add_argument('--dashboard-url',default='http://localhost:8004'); p.add_argument('--resource-pid',type=int,action='append',default=[],help='PID de servicio a medir; puede repetirse'); p.add_argument('--output',type=Path,help='archivo JSON opcional para conservar el reporte'); a=p.parse_args()
     print(f'Preparando {a.concurrency} prospectos fuera de la medición…')
-    prospects=[prepare(a.url,i) for i in range(a.concurrency)]
+    prospects=[prepare(a.prospects_url,i) for i in range(a.concurrency)]
     sampler=ResourceSampler(a.resource_pid); sampler.start(); started=time.perf_counter(); results=[]
     with ThreadPoolExecutor(max_workers=a.concurrency) as ex:
         futures=[ex.submit(post,a.url,pid) for pid in prospects]
@@ -75,13 +75,15 @@ def main():
     times=[x[1] for x in results]; ok=sum(x[0]==201 for x in results); ordered=sorted(times)
     report={'concurrency':a.concurrency,'requests':len(results),'success':ok,'error_rate_percent':round(100*(len(results)-ok)/len(results),2),'duration_seconds':round(duration,3),'avg_ms':round(statistics.mean(times),2),'p95_ms':round(ordered[max(0,int(len(ordered)*.95)-1)],2),'max_ms':round(max(times),2),'acceptance_p95_under_2000ms':ordered[max(0,int(len(ordered)*.95)-1)]<2000,**resources}
     print(json.dumps(report,indent=2))
+    if a.output:
+        a.output.parent.mkdir(parents=True,exist_ok=True); a.output.write_text(json.dumps(report,indent=2)+'\n')
     try:
-        req=Request(a.url.replace(':8002',':8004')+'/api/performance',json.dumps(report).encode(),{'Content-Type':'application/json'},method='POST')
+        req=Request(a.dashboard_url+'/api/performance',json.dumps(report).encode(),{'Content-Type':'application/json'},method='POST')
         with urlopen(req,timeout=5): pass
         print('Resultado publicado en el dashboard de rendimiento.')
     except Exception as e: print('Aviso: no se pudo publicar el resultado:',e)
     try:
-        req=Request(a.url.replace(':8002',':8004')+'/api/testing/cleanup',b'{}',{'Content-Type':'application/json'},method='POST')
+        req=Request(a.dashboard_url+'/api/testing/cleanup',b'{}',{'Content-Type':'application/json'},method='POST')
         with urlopen(req,timeout=10) as response: cleaned=json.load(response)['deleted_prospects']
         print(f'Datos temporales eliminados: {cleaned} prospectos.')
     except Exception as e: print('Aviso: no se pudieron limpiar los datos temporales:',e)
