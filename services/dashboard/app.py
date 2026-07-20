@@ -24,7 +24,11 @@ def performance(h):
 
 def save_performance(h):
     d=h._body(); required(d,'concurrency','requests','success','error_rate_percent','duration_seconds','avg_ms','p95_ms','max_ms','acceptance_p95_under_2000ms')
-    rid=execute('INSERT INTO performance_runs(concurrency,requests,success,error_rate_percent,duration_seconds,avg_ms,p95_ms,max_ms,acceptance) VALUES(?,?,?,?,?,?,?,?,?)',(d['concurrency'],d['requests'],d['success'],d['error_rate_percent'],d['duration_seconds'],d['avg_ms'],d['p95_ms'],d['max_ms'],1 if d['acceptance_p95_under_2000ms'] else 0))
+    for field in ('resource_samples','peak_cpu_percent','peak_memory_mb'):
+        if d.get(field) is not None and (isinstance(d[field],bool) or not isinstance(d[field],(int,float)) or d[field] < 0):
+            return 400,{'error':f'{field} debe ser un número no negativo'}
+    rid=execute('''INSERT INTO performance_runs(concurrency,requests,success,error_rate_percent,duration_seconds,avg_ms,p95_ms,max_ms,acceptance,resource_source,resource_samples,peak_cpu_percent,peak_memory_mb)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)''',(d['concurrency'],d['requests'],d['success'],d['error_rate_percent'],d['duration_seconds'],d['avg_ms'],d['p95_ms'],d['max_ms'],1 if d['acceptance_p95_under_2000ms'] else 0,d.get('resource_source'),d.get('resource_samples'),d.get('peak_cpu_percent'),d.get('peak_memory_mb')))
     return 201,query('SELECT * FROM performance_runs WHERE id=?',(rid,),one=True)
 
 def save_alert(h):

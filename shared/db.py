@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS performance_runs(
  id INTEGER PRIMARY KEY AUTOINCREMENT, concurrency INTEGER NOT NULL, requests INTEGER NOT NULL,
  success INTEGER NOT NULL, error_rate_percent REAL NOT NULL, duration_seconds REAL NOT NULL,
  avg_ms REAL NOT NULL, p95_ms REAL NOT NULL, max_ms REAL NOT NULL,
- acceptance INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ acceptance INTEGER NOT NULL, resource_source TEXT, resource_samples INTEGER,
+ peak_cpu_percent REAL, peak_memory_mb REAL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE IF NOT EXISTS automation_alerts(
  id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT NOT NULL, message TEXT NOT NULL,
@@ -72,6 +73,9 @@ def initialize():
         conn.executemany('INSERT OR IGNORE INTO vehicles(id,brand,model,year,price) VALUES(?,?,?,?,?)', [(1,'Toyota','Corolla',2026,24990),(2,'Kia','Sportage',2026,31990),(3,'Hyundai','Tucson',2025,29990)])
         conn.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage,entered_at) SELECT id,'initial',last_activity FROM prospects")
         conn.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage,entered_at) SELECT id,stage,last_activity FROM prospects WHERE stage!='initial'")
+        performance_columns={row[1] for row in conn.execute('PRAGMA table_info(performance_runs)')}
+        for name,kind in (('resource_source','TEXT'),('resource_samples','INTEGER'),('peak_cpu_percent','REAL'),('peak_memory_mb','REAL')):
+            if name not in performance_columns: conn.execute(f'ALTER TABLE performance_runs ADD COLUMN {name} {kind}')
 
 def query(sql, params=(), one=False):
     with LOCK, managed_connection() as conn:
