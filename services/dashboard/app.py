@@ -60,7 +60,7 @@ def save_alert(h):
 
 def cleanup_load_data(h):
     with LOCK,connect() as conn:
-        count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE 'load%@test.pe'").fetchone()['count']
+        count=conn.execute("SELECT COUNT(*) AS count FROM prospects WHERE email LIKE 'load%@test.pe'").fetchone()['count']
         conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE 'load%@test.pe')")
         conn.execute("DELETE FROM prospects WHERE email LIKE 'load%@test.pe'"); conn.commit()
     return 200,{'deleted_prospects':count}

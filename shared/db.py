@@ -3,9 +3,29 @@ from pathlib import Path
 
 
 from dotenv import load_dotenv
-load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+
+def _database_url():
+    """Load the configured database, including legacy bare-URL .env files."""
+    env_path = Path(__file__).parents[1] / '.env'
+    load_dotenv(env_path)
+    if 'DATABASE_URL' in os.environ:
+        return os.environ['DATABASE_URL'].strip() or None
+
+    # Some existing local installations stored only the connection URL in
+    # .env. Keep them working instead of silently falling back to SQLite.
+    if env_path.exists():
+        bare_values = [
+            line.strip()
+            for line in env_path.read_text().splitlines()
+            if line.strip() and not line.lstrip().startswith('#') and '=' not in line
+        ]
+        if len(bare_values) == 1 and bare_values[0].startswith(('postgresql://', 'postgres://')):
+            return bare_values[0]
+    return None
+
+
+DATABASE_URL = _database_url()
 
 if DATABASE_URL:  # pragma: no cover — tested manually via Supabase
     import psycopg2
