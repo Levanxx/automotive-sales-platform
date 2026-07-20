@@ -3,12 +3,13 @@
 ## Crear prospecto
 
 ```bash
-curl -X POST http://localhost:8001/prospects -H 'Content-Type: application/json' -d '{"name":"María López","email":"maria@email.pe","phone":"999111222","vehicle_interest":"Toyota Corolla","seller_id":1}'
+curl -X POST http://localhost:8001/prospects -H 'Content-Type: application/json' -d '{"name":"María López","email":"maria@email.pe","phone":"999111222","vehicle_id":1,"seller_id":1}'
 ```
 
-## Avanzar a negociación
+## Avanzar por el embudo hasta negociación
 
 ```bash
+curl -X PATCH http://localhost:8001/prospects/1 -H 'Content-Type: application/json' -d '{"stage":"qualification"}'
 curl -X PATCH http://localhost:8001/prospects/1 -H 'Content-Type: application/json' -d '{"stage":"negotiation"}'
 ```
 

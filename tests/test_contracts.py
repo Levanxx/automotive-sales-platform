@@ -27,7 +27,7 @@ class ContractTests(unittest.TestCase):
         status,data=catalogs(Fake()); self.assertEqual(status,200)
         self.assertGreaterEqual(len(data['sellers']),2); self.assertGreaterEqual(len(data['vehicles']),3)
     def test_stage_history_backfill(self):
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Historial','history@x.pe','1','Auto','negotiation',1)")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id) VALUES('Historial','history@x.pe','1',1,'negotiation',1)")
         initialize()
         stages={x['stage'] for x in query("SELECT stage FROM prospect_stage_history WHERE prospect_id=(SELECT id FROM prospects WHERE email='history@x.pe')")}
         self.assertEqual(stages,{'initial','negotiation'})
@@ -50,16 +50,16 @@ class ContractTests(unittest.TestCase):
             if previous is None: os.environ.pop('N8N_AUTOMATION_KEY',None)
             else: os.environ['N8N_AUTOMATION_KEY']=previous
     def test_load_cleanup(self):
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Load','load-clean@test.pe','1','Auto','initial',1)")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id) VALUES('Load','load-clean@test.pe','1',1,'initial',1)")
         status,data=cleanup_load_data(Fake()); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Integration','integration-clean@test.pe','1','Auto','initial',1)")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id) VALUES('Integration','integration-clean@test.pe','1',1,'initial',1)")
         status,data=cleanup_load_data(Fake({'scope':'integration'})); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)
         self.assertEqual(cleanup_load_data(Fake({'scope':'all'}))[0],400)
     def test_list_queries_and_not_found(self):
         self.assertEqual(prospects_list(Fake())[0],200); self.assertEqual(sales_list(Fake())[0],200); self.assertEqual(insurance_list(Fake())[0],200)
         with self.assertRaises(APIError): get_one(Fake(),'999999')
     def test_inactive_contract(self):
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id,last_activity) VALUES('Inactivo','i@x.pe','1','Auto','initial',1,'2020-01-01')")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id,last_activity) VALUES('Inactivo','i@x.pe','1',1,'initial',1,'2020-01-01')")
         result=inactive(Fake(headers={'X-Inactivity-Days':'3'}))[1]
         self.assertTrue(any(x['name']=='Inactivo' for x in result))
         with self.assertRaises(APIError): inactive(Fake(headers={'X-Inactivity-Days':'no'}))
@@ -89,7 +89,7 @@ class ContractTests(unittest.TestCase):
 
     def test_handler_verbs(self):
         h=object.__new__(Handler); calls=[]; h._dispatch=lambda x:calls.append(x); h._send=lambda *x:calls.append(x[0])
-        h.do_GET(); h.do_POST(); h.do_PATCH(); h.do_OPTIONS(); h.log_message('x')
-        self.assertEqual(calls,['GET','POST','PATCH',204])
+        h.do_GET(); h.do_POST(); h.do_PATCH(); h.do_DELETE(); h.do_OPTIONS(); h.log_message('x')
+        self.assertEqual(calls,['GET','POST','PATCH','DELETE',204])
 
 if __name__=='__main__': unittest.main()

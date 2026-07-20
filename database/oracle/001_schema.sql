@@ -9,7 +9,9 @@ CREATE TABLE vehiculos (
   marca VARCHAR2(80) NOT NULL,
   modelo VARCHAR2(80) NOT NULL,
   anio NUMBER(4) NOT NULL,
-  precio NUMBER(12,2) NOT NULL CHECK (precio > 0)
+  precio NUMBER(12,2) NOT NULL CHECK (precio > 0),
+  vendido NUMBER(1) DEFAULT 0 NOT NULL CHECK (vendido IN (0,1)),
+  imagen VARCHAR2(1000)
 );
 
 CREATE TABLE prospectos (
@@ -17,7 +19,7 @@ CREATE TABLE prospectos (
   nombre VARCHAR2(120) NOT NULL,
   email VARCHAR2(160) NOT NULL,
   telefono VARCHAR2(40) NOT NULL,
-  interes_vehiculo VARCHAR2(160) NOT NULL,
+  vehiculo_id NUMBER REFERENCES vehiculos(id),
   etapa VARCHAR2(20) DEFAULT 'initial' NOT NULL CHECK (etapa IN ('initial','qualification','negotiation','closed')),
   vendedor_id NUMBER NOT NULL REFERENCES vendedores(id),
   resultado VARCHAR2(10) CHECK (resultado IN ('won','lost')),
@@ -55,6 +57,7 @@ CREATE TABLE seguros (
 );
 
 CREATE INDEX ix_prospectos_etapa ON prospectos(etapa);
+CREATE UNIQUE INDEX uq_prospectos_email ON prospectos(email);
 CREATE INDEX ix_prospectos_actividad ON prospectos(ultima_actividad);
 CREATE INDEX ix_historial_etapa ON historial_etapas(etapa);
 CREATE INDEX ix_ventas_estado ON ventas(estado);

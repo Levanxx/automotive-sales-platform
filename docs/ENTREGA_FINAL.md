@@ -13,11 +13,11 @@ AutoPulse implementa el ciclo comercial automotriz desde el registro del prospec
 
 ## Resultados verificados
 
-- 28 pruebas automatizadas aprobadas.
-- 91% de cobertura de código.
+- 43 pruebas automatizadas aprobadas.
+- 85% de cobertura combinada de líneas y ramas.
 - Integración HTTP completa entre los cuatro microservicios aprobada.
-- 50 ventas simultáneas: p95 de 253,85 ms y 0% de errores.
-- 100 ventas simultáneas: p95 de 996,88 ms y 0% de errores.
+- 50 ventas simultáneas: p95 de 241,64 ms y 0% de errores.
+- 100 ventas simultáneas: p95 de 615,37 ms y 0% de errores.
 
 Los resultados corresponden a la regresión de backend del 19 de julio de 2026. Se entregan cuatro workflows validados estructuralmente para n8n Cloud, autenticación separada y una guía de demostración. La ejecución Cloud debe completarse después de configurar las URLs públicas; las pruebas del frontend conectado se mantienen fuera de esta fase.
 

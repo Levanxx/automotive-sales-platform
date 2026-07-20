@@ -17,6 +17,8 @@ class DatabaseScriptTests(unittest.TestCase):
         self.assertTrue({'vendedores','vehiculos','prospectos','ventas','seguros'}.issubset({x.lower() for x in tables}))
         self.assertGreaterEqual(ddl.upper().count('REFERENCES'),5)
         self.assertIn('CHECK (prima_real >= 0)',ddl)
+        self.assertIn('vehiculo_id NUMBER REFERENCES vehiculos(id)',ddl)
+        self.assertIn('vendido NUMBER(1)',ddl)
     def test_oracle_seed_has_required_catalogs(self):
         seed=(ROOT/'database'/'oracle'/'002_seed.sql').read_text().lower()
         self.assertGreaterEqual(seed.count('insert into vendedores'),2)

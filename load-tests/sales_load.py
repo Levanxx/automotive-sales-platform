@@ -51,12 +51,16 @@ class ResourceSampler:
           'peak_cpu_percent':round(max(x[0] for x in self.samples),2),
           'peak_memory_mb':round(max(x[1] for x in self.samples),2)}
 
-def prepare(base,i):
-    prospect={'name':f'Carga {i}','email':f'load{i}-{time.time_ns()}@test.pe','phone':'900000000','vehicle_interest':'Toyota Corolla','seller_id':1}
-    req=Request(base+'/prospects',json.dumps(prospect).encode(),{'Content-Type':'application/json'},method='POST')
-    with urlopen(req,timeout=10) as r: return json.load(r)['id']
-def post(base,pid):
-    sale={'prospect_id':pid,'vehicle_id':1,'seller_id':1,'amount':24990,'status':'completed'}
+def prepare(prospects_base,dashboard_base,i):
+    vehicle={'brand':'Carga','model':f'Vehículo {i}-{time.time_ns()}','year':2026,'price':24990}
+    req=Request(dashboard_base+'/api/vehicles',json.dumps(vehicle).encode(),{'Content-Type':'application/json'},method='POST')
+    with urlopen(req,timeout=10) as response: vehicle_id=json.load(response)['id']
+    prospect={'name':f'Carga {i}','email':f'load{i}-{time.time_ns()}@test.pe','phone':'900000000','vehicle_id':vehicle_id,'seller_id':1}
+    req=Request(prospects_base+'/prospects',json.dumps(prospect).encode(),{'Content-Type':'application/json'},method='POST')
+    with urlopen(req,timeout=10) as response: return json.load(response)['id'],vehicle_id
+def post(base,prepared):
+    pid,vehicle_id=prepared
+    sale={'prospect_id':pid,'vehicle_id':vehicle_id,'seller_id':1,'amount':24990,'status':'completed'}
     t=time.perf_counter()
     req=Request(base+'/sales',json.dumps(sale).encode(),{'Content-Type':'application/json'},method='POST')
     with urlopen(req,timeout=10) as r: status=r.status
@@ -64,10 +68,10 @@ def post(base,pid):
 def main():
     p=argparse.ArgumentParser(); p.add_argument('--concurrency',type=int,choices=[50,100],required=True); p.add_argument('--url',default='http://localhost:8002'); p.add_argument('--prospects-url',default='http://localhost:8001'); p.add_argument('--dashboard-url',default='http://localhost:8004'); p.add_argument('--resource-pid',type=int,action='append',default=[],help='PID de servicio a medir; puede repetirse'); p.add_argument('--output',type=Path,help='archivo JSON opcional para conservar el reporte'); a=p.parse_args()
     print(f'Preparando {a.concurrency} prospectos fuera de la medición…')
-    prospects=[prepare(a.prospects_url,i) for i in range(a.concurrency)]
+    prospects=[prepare(a.prospects_url,a.dashboard_url,i) for i in range(a.concurrency)]
     sampler=ResourceSampler(a.resource_pid); sampler.start(); started=time.perf_counter(); results=[]
     with ThreadPoolExecutor(max_workers=a.concurrency) as ex:
-        futures=[ex.submit(post,a.url,pid) for pid in prospects]
+        futures=[ex.submit(post,a.url,item) for item in prospects]
         for f in as_completed(futures):
             try: results.append(f.result())
             except Exception: results.append((0,10000))

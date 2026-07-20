@@ -6,7 +6,7 @@ La regresión cubre los microservicios de prospectos, ventas, seguros y métrica
 
 ## Pruebas unitarias y de contrato
 
-La suite contiene 28 pruebas automatizadas. Todas aprobaron. La cobertura final de líneas y ramas es 91%, por encima del umbral obligatorio de 80%.
+La suite contiene 43 pruebas automatizadas. Todas aprobaron. La cobertura combinada de líneas y ramas es 85%, por encima del umbral obligatorio de 80%.
 
 La suite verifica validaciones, historial de etapas, cierre mediante venta, coherencia de vendedor, ventas fallidas, primas, seguros vinculados, conversión global, por vendedor y por etapa, integridad referencial, almacenamiento de rendimiento y contratos HTTP.
 
@@ -30,8 +30,8 @@ El recorrido completo aprobó sin errores.
 
 | Escenario | Éxitos | Error | Promedio | p95 | Máximo | CPU pico | Memoria pico | Resultado |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| 50 ventas | 50/50 | 0% | 227,34 ms | 253,85 ms | 256,88 ms | 24,4% | 75,44 MB | Cumple |
-| 100 ventas | 100/100 | 0% | 907,36 ms | 996,88 ms | 1.005,15 ms | 19,8% | 79,31 MB | Cumple |
+| 50 ventas | 50/50 | 0% | 226,13 ms | 241,64 ms | 244,09 ms | 9,3% | 76,03 MB | Cumple |
+| 100 ventas | 100/100 | 0% | 531,45 ms | 615,37 ms | 624,44 ms | 24,5% | 79,80 MB | Cumple |
 
 El criterio automatizado es p95 menor a 2.000 ms. Los dos escenarios cumplieron.
 

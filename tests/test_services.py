@@ -5,8 +5,8 @@ from shared.db import initialize,query
 from shared.http import APIError
 from services.prospects.app import create as create_prospect, update
 from services.sales.app import create as create_sale, conversion, stage_conversion
-from services.insurance.app import create as create_insurance
-from services.dashboard.app import metrics
+from services.insurance.app import create as create_insurance, patch_insurance
+from services.dashboard.app import create_vehicle, delete_vehicle, metrics, update_vehicle
 
 class Fake:
     def __init__(self,data=None,headers=None): self.data=data or {}; self.headers=headers or {}
@@ -15,9 +15,12 @@ class ServicesTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls): initialize()
     def prospect(self,n='A'):
-        return create_prospect(Fake({'name':n,'email':n+'@x.pe','phone':'999','vehicle_interest':'Corolla','seller_id':1}))[1]
+        return create_prospect(Fake({'name':n,'email':n+'@x.pe','phone':'999','vehicle_id':1,'seller_id':1}))[1]
+    def vehicle(self,n):
+        return create_vehicle(Fake({'brand':'Test','model':n,'year':2026,'price':1000}))[1]
     def test_prospect_lifecycle(self):
         p=self.prospect('life'); self.assertEqual(p['stage'],'initial')
+        result=update(Fake({'stage':'qualification'}),str(p['id']))[1]; self.assertEqual(result['stage'],'qualification')
         result=update(Fake({'stage':'negotiation'}),str(p['id']))[1]; self.assertEqual(result['stage'],'negotiation')
         with self.assertRaises(APIError): update(Fake({'stage':'closed'}),str(p['id']))
         with self.assertRaises(APIError): update(Fake({'outcome':'won'}),str(p['id']))
@@ -26,7 +29,9 @@ class ServicesTest(unittest.TestCase):
         p=self.prospect('badstage')
         with self.assertRaises(APIError): update(Fake({'stage':'invalid'}),str(p['id']))
     def test_sale_and_insurance(self):
-        p=self.prospect('buyer'); sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        p=self.prospect('buyer'); vehicle=self.vehicle('buyer')
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        self.assertEqual(sale['status'],'completed')
         self.assertEqual(query('SELECT outcome FROM prospects WHERE id=?',(p['id'],),one=True)['outcome'],'won')
         policy=create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':1200,'actual_premium':1150,'status':'sold'}))[1]
         self.assertEqual(policy['status'],'sold')
@@ -39,7 +44,8 @@ class ServicesTest(unittest.TestCase):
         with self.assertRaises(APIError): create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':2,'amount':2,'status':'completed'}))
         with self.assertRaises(APIError): create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':'2','status':'completed'}))
     def test_insurance_validates_actual_premium(self):
-        p=self.prospect('premium'); sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        p=self.prospect('premium'); vehicle=self.vehicle('premium')
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
         with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'actual_premium':-1,'status':'sold'}))
         with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'status':'sold'}))
     def test_metrics_and_conversion(self):
@@ -48,5 +54,112 @@ class ServicesTest(unittest.TestCase):
         stages=stage_conversion(Fake())[1]
         self.assertEqual([x['stage'] for x in stages],['initial','qualification','negotiation','closed'])
         self.assertTrue(all('from_initial_rate' in x and 'from_previous_rate' in x for x in stages))
+
+    def advance_to_negotiation(self, prospect_id):
+        update(Fake({'stage':'qualification'}),str(prospect_id))
+        update(Fake({'stage':'negotiation'}),str(prospect_id))
+
+    def test_cierre_modal_won(self):
+        p=self.prospect('cierre_won'); vehicle=self.vehicle('cierre_won')
+        self.advance_to_negotiation(p['id'])
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        self.assertEqual(sale['status'],'completed')
+        self.assertEqual(sale['prospect_id'],p['id'])
+        p2=query('SELECT * FROM prospects WHERE id=?',(p['id'],),one=True)
+        self.assertEqual(p2['stage'],'closed')
+        self.assertEqual(p2['outcome'],'won')
+
+    def test_cierre_modal_lost(self):
+        p=self.prospect('cierre_lost')
+        self.advance_to_negotiation(p['id'])
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':100,'status':'failed','loss_reason':'Precio muy alto'}))[1]
+        self.assertEqual(sale['status'],'failed')
+        p2=query('SELECT * FROM prospects WHERE id=?',(p['id'],),one=True)
+        self.assertEqual(p2['stage'],'closed')
+        self.assertEqual(p2['outcome'],'lost')
+        self.assertEqual(p2['loss_reason'],'Precio muy alto')
+
+    def test_cierre_then_seguro(self):
+        p=self.prospect('seguro_flow'); vehicle=self.vehicle('seguro_flow')
+        self.advance_to_negotiation(p['id'])
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        policy=create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':1200,'actual_premium':1150,'status':'sold'}))[1]
+        self.assertEqual(policy['sale_id'],sale['id'])
+        self.assertEqual(policy['status'],'sold')
+        self.assertEqual(policy['type'],'Todo riesgo')
+
+    def test_doble_cierre_rechazado(self):
+        v=create_vehicle(Fake({'brand':'TestV','model':'X','year':2026,'price':1000}))[1]
+        p=self.prospect('doble_cierre')
+        self.advance_to_negotiation(p['id'])
+        create_sale(Fake({'prospect_id':p['id'],'vehicle_id':v['id'],'seller_id':1,'amount':25000,'status':'completed'}))
+        with self.assertRaises(APIError) as ctx:
+            create_sale(Fake({'prospect_id':p['id'],'vehicle_id':v['id'],'seller_id':1,'amount':25000,'status':'completed'}))
+        self.assertIn('ya',str(ctx.exception).lower())
+        sales=query("SELECT COUNT(*) c FROM sales WHERE prospect_id=?",(p['id'],))
+        self.assertEqual(sales[0]['c'],1)
+
+    def test_create_vehicle(self):
+        v=create_vehicle(Fake({'brand':'Mazda','model':'CX-5','year':2026,'price':35000}))[1]
+        self.assertEqual(v['brand'],'Mazda')
+        self.assertEqual(v['model'],'CX-5')
+        self.assertEqual(v['year'],2026)
+        self.assertEqual(v['price'],35000)
+        self.assertIsNone(v['imagen'])
+
+    def test_create_vehicle_with_image(self):
+        v=create_vehicle(Fake({'brand':'Mazda','model':'CX-5','year':2026,'price':35000,'imagen':'https://example.com/img.jpg'}))[1]
+        self.assertEqual(v['imagen'],'https://example.com/img.jpg')
+
+    def test_create_vehicle_missing_fields(self):
+        with self.assertRaises(APIError): create_vehicle(Fake({'brand':'Mazda'}))
+
+    def test_update_and_delete_vehicle(self):
+        v=self.vehicle('editable')
+        updated=update_vehicle(Fake({'price':1500,'imagen':'https://example.com/car.jpg'}),str(v['id']))[1]
+        self.assertEqual(updated['price'],1500)
+        self.assertEqual(updated['imagen'],'https://example.com/car.jpg')
+        self.assertEqual(delete_vehicle(Fake(),str(v['id']))[0],200)
+
+    def test_vehicle_validation_and_protected_delete(self):
+        with self.assertRaises(APIError): create_vehicle(Fake({'brand':'X','model':'Y','year':'no','price':1}))
+        with self.assertRaises(APIError): create_vehicle(Fake({'brand':'X','model':'Y','year':2026,'price':0}))
+        with self.assertRaises(APIError): delete_vehicle(Fake(),'1')
+
+    def test_patch_insurance_validation(self):
+        p=self.prospect('patch_policy'); vehicle=self.vehicle('patch_policy')
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        policy=create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'status':'prospected'}))[1]
+        with self.assertRaises(APIError): patch_insurance(Fake({'status':'sold'}),str(policy['id']))
+        updated=patch_insurance(Fake({'status':'sold','actual_premium':90}),str(policy['id']))[1]
+        self.assertEqual(updated['status'],'sold')
+
+    def test_create_seller(self):
+        from services.dashboard.app import create_seller
+        s=create_seller(Fake({'name':'Nuevo Vendedor','email':'nuevo@autos.pe'}))[1]
+        self.assertEqual(s['name'],'Nuevo Vendedor')
+        self.assertEqual(s['email'],'nuevo@autos.pe')
+
+    def test_create_seller_duplicate_email(self):
+        from services.dashboard.app import create_seller
+        with self.assertRaises(APIError) as ctx:
+            create_seller(Fake({'name':'Otro','email':'nuevo@autos.pe'}))
+        self.assertIn('registrado',str(ctx.exception).lower())
+
+    def test_create_prospect_with_vehicle_fk(self):
+        p=create_prospect(Fake({'name':'FK Test','email':'fk@x.pe','phone':'999','vehicle_id':1,'seller_id':1}))[1]
+        self.assertEqual(p['vehicle_id'],1)
+        self.assertEqual(p['vehicle_name'],'Toyota Corolla (2026)')
+
+    def test_create_prospect_invalid_vehicle(self):
+        with self.assertRaises(APIError) as ctx:
+            create_prospect(Fake({'name':'BadV','email':'bv@x.pe','phone':'999','vehicle_id':999,'seller_id':1}))
+        self.assertIn('Vehículo',str(ctx.exception))
+        with self.assertRaises(APIError):
+            create_prospect(Fake({'name':'BadType','email':'bt@x.pe','phone':'999','vehicle_id':'abc','seller_id':1}))
+
+    def test_prospect_no_vehicle_optional(self):
+        p=create_prospect(Fake({'name':'NoVeh','email':'nov@x.pe','phone':'999','seller_id':1}))[1]
+        self.assertIsNone(p['vehicle_id'])
 
 if __name__=='__main__': unittest.main()

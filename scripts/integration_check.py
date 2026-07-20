@@ -40,9 +40,11 @@ def run_checks(urls):
     run_id=uuid.uuid4().hex
     status,catalogs=request_json(urls['dashboard']+'/api/catalogs')
     assert_status(status,200,'catálogos')
-    seller=catalogs['sellers'][0]; vehicle=catalogs['vehicles'][0]
+    seller=catalogs['sellers'][0]
+    status,vehicle=request_json(urls['dashboard']+'/api/vehicles','POST',{'brand':'Integración','model':run_id[:8],'year':2026,'price':24990})
+    assert_status(status,201,'crear vehículo de integración')
     prospect={'name':'Integración HTTP','email':f'integration-{run_id}@test.pe','phone':'900000000',
-      'vehicle_interest':f"{vehicle['brand']} {vehicle['model']}",'seller_id':seller['id']}
+      'vehicle_id':vehicle['id'],'seller_id':seller['id']}
     status,created=request_json(urls['prospects']+'/prospects','POST',prospect)
     assert_status(status,201,'crear prospecto'); prospect_id=created['id']
     print('✓ prospecto creado')
@@ -77,6 +79,8 @@ def run_checks(urls):
     status,cleaned=request_json(urls['dashboard']+'/api/testing/cleanup','POST',{'scope':'integration'})
     assert_status(status,200,'limpieza de integración')
     if cleaned['deleted_prospects'] < 1: raise AssertionError('no se limpiaron los datos de integración')
+    status,_=request_json(urls['dashboard']+f'/api/vehicles/{vehicle["id"]}','DELETE')
+    assert_status(status,200,'limpieza del vehículo de integración')
     print('✓ datos temporales eliminados')
 
 def free_port():
