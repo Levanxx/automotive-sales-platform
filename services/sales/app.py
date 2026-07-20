@@ -1,5 +1,5 @@
 import sqlite3
-from shared.db import initialize, query, execute, LOCK, connect
+from shared.db import initialize, query, execute, LOCK, managed_connection
 from shared.http import Handler, APIError, required, serve
 class Sales(Handler): pass
 def list_all(h): return 200,query("SELECT s.*,p.name prospect_name,v.brand||' '||v.model vehicle_name,se.name seller_name FROM sales s JOIN prospects p ON p.id=s.prospect_id JOIN vehicles v ON v.id=s.vehicle_id JOIN sellers se ON se.id=s.seller_id ORDER BY s.id DESC")
@@ -26,7 +26,7 @@ def create(h):
     if d['status']=='failed' and not d.get('loss_reason'): raise APIError(400,'Indique el motivo de pérdida')
     
     try:
-        with LOCK, connect() as c:
+        with LOCK, managed_connection() as c:
             cur=c.execute('INSERT INTO sales(prospect_id,vehicle_id,seller_id,amount,status,loss_reason) VALUES(?,?,?,?,?,?)',(d['prospect_id'],d['vehicle_id'],d['seller_id'],d['amount'],d['status'],d.get('loss_reason')))
             c.execute('UPDATE prospects SET stage=?,outcome=?,loss_reason=?,last_activity=CURRENT_TIMESTAMP WHERE id=?',('closed','won' if d['status']=='completed' else 'lost',d.get('loss_reason'),d['prospect_id']))
             c.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,'closed')",(d['prospect_id'],))

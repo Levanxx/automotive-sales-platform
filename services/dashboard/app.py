@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from shared.db import LOCK,connect,initialize,query,execute
+from shared.db import LOCK,managed_connection,initialize,query,execute
 from shared.http import Handler,serve,required
 class Dashboard(Handler):
     def do_GET(self):
@@ -36,7 +36,7 @@ def cleanup_load_data(h):
     d=h._body(); scope=d.get('scope','load')
     if scope not in ('load','integration'): return 400,{'error':'Scope de limpieza inválido'}
     pattern="load%@test.pe" if scope=='load' else "integration-%@test.pe"
-    with LOCK,connect() as conn:
+    with LOCK,managed_connection() as conn:
         count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE ?",(pattern,)).fetchone()[0]
         conn.execute("DELETE FROM insurance WHERE sale_id IN (SELECT s.id FROM sales s JOIN prospects p ON p.id=s.prospect_id WHERE p.email LIKE ?)",(pattern,))
         conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE ?)",(pattern,))

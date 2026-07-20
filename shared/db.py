@@ -1,4 +1,5 @@
 import os, sqlite3, threading
+from contextlib import contextmanager
 from pathlib import Path
 
 LOCK = threading.RLock()
@@ -51,8 +52,19 @@ def connect():
     conn.execute('PRAGMA foreign_keys=ON')
     return conn
 
+@contextmanager
+def managed_connection():
+    conn=connect()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally: conn.close()
+
 def initialize():
-    with LOCK, connect() as conn:
+    with LOCK, managed_connection() as conn:
         conn.execute('PRAGMA journal_mode=WAL')
         conn.execute('PRAGMA synchronous=NORMAL')
         conn.executescript(SCHEMA)
@@ -62,11 +74,11 @@ def initialize():
         conn.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage,entered_at) SELECT id,stage,last_activity FROM prospects WHERE stage!='initial'")
 
 def query(sql, params=(), one=False):
-    with LOCK, connect() as conn:
+    with LOCK, managed_connection() as conn:
         rows = conn.execute(sql, params).fetchall()
         result = [dict(r) for r in rows]
         return (result[0] if result else None) if one else result
 
 def execute(sql, params=()):
-    with LOCK, connect() as conn:
+    with LOCK, managed_connection() as conn:
         cur = conn.execute(sql, params); conn.commit(); return cur.lastrowid
