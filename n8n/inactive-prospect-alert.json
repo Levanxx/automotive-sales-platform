@@ -1,1 +1,98 @@
-{"name":"Alerta de prospectos inactivos","nodes":[{"parameters":{"rule":{"interval":[{"field":"hours","hoursInterval":24}]}},"id":"schedule","name":"Revisión diaria","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[160,300]},{"parameters":{"url":"http://prospects:8001/prospects/inactive","sendHeaders":true,"headerParameters":{"parameters":[{"name":"X-Inactivity-Days","value":"={{ $env.INACTIVITY_DAYS || 3 }}"}]}},"id":"get","name":"Obtener inactivos","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[400,300]},{"parameters":{"jsCode":"return items.map(i => ({json:{event:'inactive_prospect',message:`Prospecto inactivo: ${i.json.name}`,prospect:i.json}}));"},"id":"format","name":"Preparar alerta","type":"n8n-nodes-base.code","typeVersion":2,"position":[640,300]},{"parameters":{"method":"POST","url":"={{ $env.ALERT_WEBHOOK_URL }}","sendBody":true,"contentType":"raw","rawContentType":"application/json","body":"={{ JSON.stringify($json) }}","options":{}},"id":"notify","name":"Enviar alerta","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[880,300]}],"connections":{"Revisión diaria":{"main":[[{"node":"Obtener inactivos","type":"main","index":0}]]},"Obtener inactivos":{"main":[[{"node":"Preparar alerta","type":"main","index":0}]]},"Preparar alerta":{"main":[[{"node":"Enviar alerta","type":"main","index":0}]]}},"active":false,"settings":{"executionOrder":"v1"}}
+{
+  "name": "AutoPulse Cloud - Seguimiento de prospectos inactivos",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Prueba manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [120, 180]
+    },
+    {
+      "parameters": {"rule": {"interval": [{"field": "hours", "hoursInterval": 24}]}},
+      "id": "daily-schedule",
+      "name": "Revisión diaria",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [120, 340]
+    },
+    {
+      "parameters": {
+        "assignments": {"assignments": [
+          {"id": "prospects-url", "name": "prospectsUrl", "value": "https://REEMPLAZAR-PROSPECTOS.example.com", "type": "string"},
+          {"id": "dashboard-url", "name": "dashboardUrl", "value": "https://REEMPLAZAR-DASHBOARD.example.com", "type": "string"},
+          {"id": "days", "name": "inactivityDays", "value": 3, "type": "number"}
+        ]},
+        "options": {}
+      },
+      "id": "configuration",
+      "name": "Configurar URLs y días",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [360, 260]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configurar URLs y días').first().json.prospectsUrl + '/prospects/inactive' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-Inactivity-Days", "value": "={{ $('Configurar URLs y días').first().json.inactivityDays }}"}]},
+        "options": {"timeout": 10000}
+      },
+      "id": "get-inactive",
+      "name": "Obtener prospectos inactivos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 260],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = items.flatMap(item => Array.isArray(item.json) ? item.json : [item.json]);\nreturn rows.filter(p => p && p.id).map(p => ({json:{event:'inactive_prospect',message:`Prospecto inactivo: ${p.name} (${p.email})`,prospect_id:p.id,prospect_name:p.name,email:p.email,stage:p.stage,last_activity:p.last_activity,detected_at:new Date().toISOString()}}));"
+      },
+      "id": "format-alerts",
+      "name": "Preparar una alerta por prospecto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configurar URLs y días').first().json.dashboardUrl + '/api/alerts' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "send-alert",
+      "name": "Registrar alerta en AutoPulse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 260],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}
+    }
+  ],
+  "connections": {
+    "Prueba manual": {"main": [[{"node": "Configurar URLs y días", "type": "main", "index": 0}]]},
+    "Revisión diaria": {"main": [[{"node": "Configurar URLs y días", "type": "main", "index": 0}]]},
+    "Configurar URLs y días": {"main": [[{"node": "Obtener prospectos inactivos", "type": "main", "index": 0}]]},
+    "Obtener prospectos inactivos": {"main": [[{"node": "Preparar una alerta por prospecto", "type": "main", "index": 0}]]},
+    "Preparar una alerta por prospecto": {"main": [[{"node": "Registrar alerta en AutoPulse", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "timezone": "America/Lima"},
+  "tags": [],
+  "meta": {"templateCredsSetupCompleted": false}
+}

@@ -1,2 +1,49 @@
-{"name":"Sincronización y control de servicios","nodes":[{"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":15}]}},"id":"schedule","name":"Cada 15 minutos","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[200,300]},{"parameters":{"url":"http://dashboard:8004/api/metrics"},"id":"metrics","name":"Consolidar métricas","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[450,300]},{"parameters":{"conditions":{"options":{"caseSensitive":true},"conditions":[{"leftValue":"={{ $json.total_prospects }}","rightValue":0,"operator":{"type":"number","operation":"gte"}}]}},"id":"check","name":"Validar sincronización","type":"n8n-nodes-base.if","typeVersion":2.2,"position":[700,300]}],"connections":{"Cada 15 minutos":{"main":[[{"node":"Consolidar métricas","type":"main","index":0}]]},"Consolidar métricas":{"main":[[{"node":"Validar sincronización","type":"main","index":0}]]}},"active":false,"settings":{"executionOrder":"v1"}}
-
+{
+  "name": "AutoPulse Cloud - Sincronización comercial",
+  "nodes": [
+    {"parameters": {}, "id": "manual-trigger", "name": "Prueba manual", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [80, 160]},
+    {"parameters": {"rule": {"interval": [{"field": "minutes", "minutesInterval": 15}]}}, "id": "schedule", "name": "Cada 15 minutos", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [80, 320]},
+    {
+      "parameters": {"assignments": {"assignments": [
+        {"id": "prospects-url", "name": "prospectsUrl", "value": "https://REEMPLAZAR-PROSPECTOS.example.com", "type": "string"},
+        {"id": "sales-url", "name": "salesUrl", "value": "https://REEMPLAZAR-VENTAS.example.com", "type": "string"},
+        {"id": "insurance-url", "name": "insuranceUrl", "value": "https://REEMPLAZAR-SEGUROS.example.com", "type": "string"},
+        {"id": "dashboard-url", "name": "dashboardUrl", "value": "https://REEMPLAZAR-DASHBOARD.example.com", "type": "string"}
+      ]}, "options": {}},
+      "id": "configuration", "name": "Configurar URLs públicas", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [320, 240]
+    },
+    {"parameters": {"url": "={{ $('Configurar URLs públicas').first().json.prospectsUrl + '/prospects' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {"timeout": 10000}}, "id": "prospects", "name": "Obtener prospectos", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [560, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}},
+    {"parameters": {"jsCode": "return [{json:{continue:true}}];"}, "id": "continue-1", "name": "Continuar una vez 1", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [780, 240]},
+    {"parameters": {"url": "={{ $('Configurar URLs públicas').first().json.salesUrl + '/sales' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {"timeout": 10000}}, "id": "sales", "name": "Obtener ventas", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1000, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}},
+    {"parameters": {"jsCode": "return [{json:{continue:true}}];"}, "id": "continue-2", "name": "Continuar una vez 2", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1220, 240]},
+    {"parameters": {"url": "={{ $('Configurar URLs públicas').first().json.insuranceUrl + '/insurance' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {"timeout": 10000}}, "id": "insurance", "name": "Obtener seguros", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1440, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}},
+    {"parameters": {"jsCode": "return [{json:{continue:true}}];"}, "id": "continue-3", "name": "Continuar una vez 3", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1660, 240]},
+    {"parameters": {"url": "={{ $('Configurar URLs públicas').first().json.salesUrl + '/sales/conversion' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {"timeout": 10000}}, "id": "conversion", "name": "Obtener conversión", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1880, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}},
+    {"parameters": {"jsCode": "return [{json:{continue:true}}];"}, "id": "continue-4", "name": "Continuar una vez 4", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [2100, 240]},
+    {"parameters": {"url": "={{ $('Configurar URLs públicas').first().json.dashboardUrl + '/api/metrics' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {"timeout": 10000}}, "id": "metrics", "name": "Obtener métricas", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [2320, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}},
+    {
+      "parameters": {"jsCode": "const metrics = $('Obtener métricas').first().json;\nconst payload={event:'service_sync',message:'Sincronización comercial completada',synced_at:new Date().toISOString(),counts:{prospects:$('Obtener prospectos').all().length,sales:$('Obtener ventas').all().length,insurance:$('Obtener seguros').all().length},metrics,seller_conversion:$('Obtener conversión').all().map(i=>i.json)};\nreturn [{json:payload}];"},
+      "id": "summary", "name": "Construir resumen sincronizado", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [2540, 240]
+    },
+    {"parameters": {"method": "POST", "url": "={{ $('Configurar URLs públicas').first().json.dashboardUrl + '/api/alerts' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "contentType": "raw", "rawContentType": "application/json", "body": "={{ JSON.stringify($json) }}", "options": {"timeout": 10000}}, "id": "save-sync", "name": "Registrar sincronización", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [2780, 240], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}}
+  ],
+  "connections": {
+    "Prueba manual": {"main": [[{"node": "Configurar URLs públicas", "type": "main", "index": 0}]]},
+    "Cada 15 minutos": {"main": [[{"node": "Configurar URLs públicas", "type": "main", "index": 0}]]},
+    "Configurar URLs públicas": {"main": [[{"node": "Obtener prospectos", "type": "main", "index": 0}]]},
+    "Obtener prospectos": {"main": [[{"node": "Continuar una vez 1", "type": "main", "index": 0}]]},
+    "Continuar una vez 1": {"main": [[{"node": "Obtener ventas", "type": "main", "index": 0}]]},
+    "Obtener ventas": {"main": [[{"node": "Continuar una vez 2", "type": "main", "index": 0}]]},
+    "Continuar una vez 2": {"main": [[{"node": "Obtener seguros", "type": "main", "index": 0}]]},
+    "Obtener seguros": {"main": [[{"node": "Continuar una vez 3", "type": "main", "index": 0}]]},
+    "Continuar una vez 3": {"main": [[{"node": "Obtener conversión", "type": "main", "index": 0}]]},
+    "Obtener conversión": {"main": [[{"node": "Continuar una vez 4", "type": "main", "index": 0}]]},
+    "Continuar una vez 4": {"main": [[{"node": "Obtener métricas", "type": "main", "index": 0}]]},
+    "Obtener métricas": {"main": [[{"node": "Construir resumen sincronizado", "type": "main", "index": 0}]]},
+    "Construir resumen sincronizado": {"main": [[{"node": "Registrar sincronización", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "timezone": "America/Lima"},
+  "tags": [],
+  "meta": {"templateCredsSetupCompleted": false}
+}

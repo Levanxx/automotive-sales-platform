@@ -1,0 +1,16 @@
+{
+  "name": "AutoPulse Cloud - Manejador global de errores",
+  "nodes": [
+    {"parameters": {}, "id": "error-trigger", "name": "Error de workflow", "type": "n8n-nodes-base.errorTrigger", "typeVersion": 1, "position": [180, 260]},
+    {"parameters": {"jsCode": "const source=$input.first().json;\nreturn [{json:{event:'n8n_workflow_error',message:`Error en workflow: ${source.workflow?.name||'desconocido'}`,workflow_name:source.workflow?.name,workflow_id:source.workflow?.id,execution_id:source.execution?.id,execution_url:source.execution?.url,error_message:source.execution?.error?.message||source.error?.message||'Error no especificado',failed_at:new Date().toISOString(),dashboard_url:'https://REEMPLAZAR-DASHBOARD.example.com'}}];"}, "id": "format-error", "name": "Preparar detalle del error", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [440, 260]},
+    {"parameters": {"method": "POST", "url": "={{ $json.dashboard_url + '/api/alerts' }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "contentType": "raw", "rawContentType": "application/json", "body": "={{ JSON.stringify($json) }}", "options": {"timeout": 10000}}, "id": "save-error", "name": "Registrar error en AutoPulse", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 260], "retryOnFail": true, "maxTries": 3, "credentials": {"httpHeaderAuth": {"id": "REEMPLAZAR_CREDENCIAL", "name": "AutoPulse API Key"}}}
+  ],
+  "connections": {
+    "Error de workflow": {"main": [[{"node": "Preparar detalle del error", "type": "main", "index": 0}]]},
+    "Preparar detalle del error": {"main": [[{"node": "Registrar error en AutoPulse", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "timezone": "America/Lima"},
+  "tags": [],
+  "meta": {"templateCredsSetupCompleted": false}
+}
