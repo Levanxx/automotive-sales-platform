@@ -3,11 +3,11 @@ from pathlib import Path
 
 DB=tempfile.NamedTemporaryFile(delete=False); DB.close(); os.environ['DATABASE_PATH']=DB.name
 from shared.db import initialize, query, execute
-from shared.http import APIError, Handler, match_path, required
+from shared.http import APIError, Handler, match_path, required, require_automation_key
 from services.prospects.app import inactive, get_one, list_all as prospects_list
 from services.sales.app import list_all as sales_list
 from services.insurance.app import list_all as insurance_list
-from services.dashboard.app import catalogs, cleanup_load_data, performance, save_alert, save_performance
+from services.dashboard.app import catalogs, cleanup_load_data, list_alerts, performance, save_alert, save_performance
 
 class Fake:
     def __init__(self,data=None,headers=None): self.data=data or {}; self.headers=headers or {}
@@ -39,6 +39,16 @@ class ContractTests(unittest.TestCase):
     def test_automation_alert_receiver(self):
         status,data=save_alert(Fake({'event':'inactive_prospect','message':'Prospecto inactivo'}))
         self.assertEqual(status,201); self.assertTrue(data['received'])
+        status,rows=list_alerts(Fake()); self.assertEqual(status,200); self.assertEqual(rows[0]['event'],'inactive_prospect')
+    def test_automation_key_is_optional_and_enforced_when_configured(self):
+        require_automation_key(Fake())
+        previous=os.environ.get('N8N_AUTOMATION_KEY'); os.environ['N8N_AUTOMATION_KEY']='secret-test'
+        try:
+            with self.assertRaises(APIError): require_automation_key(Fake())
+            require_automation_key(Fake(headers={'X-Automation-Key':'secret-test'}))
+        finally:
+            if previous is None: os.environ.pop('N8N_AUTOMATION_KEY',None)
+            else: os.environ['N8N_AUTOMATION_KEY']=previous
     def test_load_cleanup(self):
         execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Load','load-clean@test.pe','1','Auto','initial',1)")
         status,data=cleanup_load_data(Fake()); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)

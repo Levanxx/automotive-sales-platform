@@ -1,5 +1,5 @@
 from shared.db import LOCK, managed_connection, initialize, query, execute
-from shared.http import Handler, APIError, required, serve
+from shared.http import Handler, APIError, required, require_automation_key, serve
 
 STAGES=('initial','qualification','negotiation','closed')
 class Prospects(Handler): pass
@@ -46,6 +46,7 @@ def update(h, id):
     return 200, query('SELECT * FROM prospects WHERE id=?', (id,), one=True)
 
 def inactive(h):
+    require_automation_key(h)
     try: days=int(h.headers.get('X-Inactivity-Days','3'))
     except (TypeError, ValueError): raise APIError(400, 'X-Inactivity-Days debe ser un entero positivo')
     if days < 1: raise APIError(400, 'X-Inactivity-Days debe ser un entero positivo')

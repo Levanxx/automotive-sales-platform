@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from shared.db import LOCK,managed_connection,initialize,query,execute
-from shared.http import Handler,serve,required
+from shared.http import Handler,serve,required,require_automation_key
 class Dashboard(Handler):
     def do_GET(self):
         if self.path in ('/','/index.html'):
@@ -32,9 +32,14 @@ def save_performance(h):
     return 201,query('SELECT * FROM performance_runs WHERE id=?',(rid,),one=True)
 
 def save_alert(h):
+    require_automation_key(h)
     d=h._body(); required(d,'event','message')
     rid=execute('INSERT INTO automation_alerts(event,message,payload) VALUES(?,?,?)',(d['event'],d['message'],json.dumps(d,ensure_ascii=False)))
     return 201,{'id':rid,'received':True}
+
+def list_alerts(h):
+    require_automation_key(h)
+    return 200,query('SELECT id,event,message,payload,created_at FROM automation_alerts ORDER BY id DESC LIMIT 100')
 
 def cleanup_load_data(h):
     d=h._body(); scope=d.get('scope','load')
@@ -46,5 +51,5 @@ def cleanup_load_data(h):
         conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE ?)",(pattern,))
         conn.execute("DELETE FROM prospects WHERE email LIKE ?",(pattern,)); conn.commit()
     return 200,{'deleted_prospects':count}
-Dashboard.routes={('GET','/api/metrics'):metrics,('GET','/api/catalogs'):catalogs,('GET','/api/performance'):performance,('POST','/api/performance'):save_performance,('POST','/api/alerts'):save_alert,('POST','/api/testing/cleanup'):cleanup_load_data}
+Dashboard.routes={('GET','/api/metrics'):metrics,('GET','/api/catalogs'):catalogs,('GET','/api/performance'):performance,('POST','/api/performance'):save_performance,('GET','/api/alerts'):list_alerts,('POST','/api/alerts'):save_alert,('POST','/api/testing/cleanup'):cleanup_load_data}
 if __name__=='__main__': initialize(); serve(Dashboard,8004)

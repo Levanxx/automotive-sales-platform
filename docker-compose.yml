@@ -3,7 +3,7 @@ services:
   prospects:
     build: .
     command: python -m services.prospects.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8001]
+    environment: [DATABASE_PATH=/data/automotive.db, PORT=8001, "N8N_AUTOMATION_KEY=${N8N_AUTOMATION_KEY:-}"]
     volumes: [app-data:/data]
     ports: ["8001:8001"]
   sales:
@@ -21,7 +21,7 @@ services:
   dashboard:
     build: .
     command: python -m services.dashboard.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8004]
+    environment: [DATABASE_PATH=/data/automotive.db, PORT=8004, "N8N_AUTOMATION_KEY=${N8N_AUTOMATION_KEY:-}"]
     volumes: [app-data:/data]
     ports: ["8004:8004"]
   n8n:
