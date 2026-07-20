@@ -33,10 +33,14 @@ def save_alert(h):
     return 201,{'id':rid,'received':True}
 
 def cleanup_load_data(h):
+    d=h._body(); scope=d.get('scope','load')
+    if scope not in ('load','integration'): return 400,{'error':'Scope de limpieza inválido'}
+    pattern="load%@test.pe" if scope=='load' else "integration-%@test.pe"
     with LOCK,connect() as conn:
-        count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE 'load%@test.pe'").fetchone()[0]
-        conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE 'load%@test.pe')")
-        conn.execute("DELETE FROM prospects WHERE email LIKE 'load%@test.pe'"); conn.commit()
+        count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE ?",(pattern,)).fetchone()[0]
+        conn.execute("DELETE FROM insurance WHERE sale_id IN (SELECT s.id FROM sales s JOIN prospects p ON p.id=s.prospect_id WHERE p.email LIKE ?)",(pattern,))
+        conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE ?)",(pattern,))
+        conn.execute("DELETE FROM prospects WHERE email LIKE ?",(pattern,)); conn.commit()
     return 200,{'deleted_prospects':count}
 Dashboard.routes={('GET','/api/metrics'):metrics,('GET','/api/catalogs'):catalogs,('GET','/api/performance'):performance,('POST','/api/performance'):save_performance,('POST','/api/alerts'):save_alert,('POST','/api/testing/cleanup'):cleanup_load_data}
 if __name__=='__main__': initialize(); serve(Dashboard,8004)

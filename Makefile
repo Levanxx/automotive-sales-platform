@@ -6,7 +6,7 @@ test:
 coverage:
 	coverage run --branch -m unittest discover -s tests && coverage report --fail-under=80
 integration:
-	python scripts/integration_check.py
+	python scripts/integration_check.py --self-contained
 seed:
 	python scripts/seed.py
 load50:

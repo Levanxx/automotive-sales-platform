@@ -41,6 +41,9 @@ class ContractTests(unittest.TestCase):
     def test_load_cleanup(self):
         execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Load','load-clean@test.pe','1','Auto','initial',1)")
         status,data=cleanup_load_data(Fake()); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)
+        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Integration','integration-clean@test.pe','1','Auto','initial',1)")
+        status,data=cleanup_load_data(Fake({'scope':'integration'})); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)
+        self.assertEqual(cleanup_load_data(Fake({'scope':'all'}))[0],400)
     def test_list_queries_and_not_found(self):
         self.assertEqual(prospects_list(Fake())[0],200); self.assertEqual(sales_list(Fake())[0],200); self.assertEqual(insurance_list(Fake())[0],200)
         with self.assertRaises(APIError): get_one(Fake(),'999999')
