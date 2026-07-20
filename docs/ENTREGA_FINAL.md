@@ -13,8 +13,8 @@ AutoPulse implementa el ciclo comercial automotriz desde el registro del prospec
 
 ## Resultados verificados
 
-- 43 pruebas automatizadas aprobadas.
-- 85% de cobertura combinada de líneas y ramas.
+- 46 pruebas automatizadas aprobadas.
+- 89% de cobertura combinada de líneas y ramas.
 - Integración HTTP completa entre los cuatro microservicios aprobada.
 - 50 ventas simultáneas: p95 de 241,64 ms y 0% de errores.
 - 100 ventas simultáneas: p95 de 615,37 ms y 0% de errores.

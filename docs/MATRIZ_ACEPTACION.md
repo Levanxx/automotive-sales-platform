@@ -6,7 +6,7 @@
 | Registrar ventas realizadas y fallidas | Servicio y módulo web de ventas | Cumple |
 | Vincular seguros a ventas efectivas | Servicio y módulo web de seguros | Cumple |
 | Mostrar indicadores y embudo | Dashboard en tiempo real | Cumple |
-| Cobertura mínima de 80% | 43 pruebas, cobertura combinada de líneas y ramas: 85% | Cumple |
+| Cobertura mínima de 80% | 46 pruebas, cobertura combinada de líneas y ramas: 89% | Cumple |
 | Integración de microservicios | Recorrido HTTP aislado con `scripts/integration_check.py --self-contained` | Cumple |
 | Simulación de 50 ventas | 50/50, p95 241,64 ms, error 0% | Cumple |
 | Simulación de 100 ventas en menos de 2 s | 100/100, p95 615,37 ms, error 0% | Cumple |

@@ -6,7 +6,7 @@ La regresión cubre los microservicios de prospectos, ventas, seguros y métrica
 
 ## Pruebas unitarias y de contrato
 
-La suite contiene 43 pruebas automatizadas. Todas aprobaron. La cobertura combinada de líneas y ramas es 85%, por encima del umbral obligatorio de 80%.
+La suite contiene 46 pruebas automatizadas. Todas aprobaron. La cobertura combinada de líneas y ramas es 89%, por encima del umbral obligatorio de 80%.
 
 La suite verifica validaciones, historial de etapas, cierre mediante venta, coherencia de vendedor, ventas fallidas, primas, seguros vinculados, conversión global, por vendedor y por etapa, integridad referencial, almacenamiento de rendimiento y contratos HTTP.
 

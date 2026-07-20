@@ -4,8 +4,8 @@ DB=tempfile.NamedTemporaryFile(delete=False); DB.close(); os.environ['DATABASE_P
 from shared.db import initialize,query
 from shared.http import APIError
 from services.prospects.app import create as create_prospect, update
-from services.sales.app import create as create_sale, conversion, stage_conversion
-from services.insurance.app import create as create_insurance, patch_insurance
+from services.sales.app import create as create_sale, conversion, get_one_sale, stage_conversion
+from services.insurance.app import create as create_insurance, get_one_insurance, patch_insurance
 from services.dashboard.app import create_vehicle, delete_vehicle, metrics, update_vehicle
 
 class Fake:
@@ -133,6 +133,18 @@ class ServicesTest(unittest.TestCase):
         with self.assertRaises(APIError): patch_insurance(Fake({'status':'sold'}),str(policy['id']))
         updated=patch_insurance(Fake({'status':'sold','actual_premium':90}),str(policy['id']))[1]
         self.assertEqual(updated['status'],'sold')
+        self.assertEqual(get_one_insurance(Fake(),str(policy['id']))[1]['sale_id'],sale['id'])
+
+    def test_sale_detail_and_sold_vehicle_protection(self):
+        p=self.prospect('sale_detail'); vehicle=self.vehicle('sale_detail')
+        sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        detail=get_one_sale(Fake(),str(sale['id']))[1]
+        self.assertEqual(detail['prospect_name'],'sale_detail')
+        self.assertEqual(query('SELECT sold FROM vehicles WHERE id=?',(vehicle['id'],),one=True)['sold'],1)
+        other=self.prospect('same_vehicle')
+        with self.assertRaises(APIError):
+            create_sale(Fake({'prospect_id':other['id'],'vehicle_id':vehicle['id'],'seller_id':1,'amount':25000,'status':'completed'}))
+        with self.assertRaises(APIError): get_one_sale(Fake(),'999999')
 
     def test_create_seller(self):
         from services.dashboard.app import create_seller
@@ -161,5 +173,9 @@ class ServicesTest(unittest.TestCase):
     def test_prospect_no_vehicle_optional(self):
         p=create_prospect(Fake({'name':'NoVeh','email':'nov@x.pe','phone':'999','seller_id':1}))[1]
         self.assertIsNone(p['vehicle_id'])
+
+    def test_prospect_cannot_skip_stages(self):
+        p=self.prospect('skip_stage')
+        with self.assertRaises(APIError): update(Fake({'stage':'negotiation'}),str(p['id']))
 
 if __name__=='__main__': unittest.main()
