@@ -27,9 +27,9 @@ Copie `.env.example` como `.env`, configure `ALERT_WEBHOOK_URL` para Teams, Slac
 ```bash
 python scripts/seed.py
 python -m unittest discover -s tests -v
-python scripts/integration_check.py
-python load-tests/sales_load.py --concurrency 50
-python load-tests/sales_load.py --concurrency 100
+python scripts/integration_check.py --self-contained
+python scripts/stress_check.py
+make regression
 ```
 
-Las pruebas de carga publican automáticamente sus resultados en la sección **Rendimiento** de la consola web.
+`stress_check.py` levanta servicios y una base temporal, ejecuta 50 y 100 ventas, mide latencia, errores, CPU y memoria, y elimina el entorno al finalizar. Las pruebas contra un entorno ya iniciado publican automáticamente sus resultados mediante `/api/performance`.

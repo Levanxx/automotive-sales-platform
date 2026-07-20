@@ -15,3 +15,4 @@ load100:
 	python load-tests/sales_load.py --concurrency 100
 stress:
 	python scripts/stress_check.py
+regression: coverage integration

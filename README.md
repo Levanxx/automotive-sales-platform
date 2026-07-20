@@ -16,10 +16,13 @@ Abra `http://localhost:8004`. La consola web permite gestionar prospectos, venta
 ```bash
 python -m unittest discover -s tests -v
 coverage run --branch -m unittest discover -s tests && coverage report --fail-under=80
-python scripts/integration_check.py
+python scripts/integration_check.py --self-contained
+python scripts/stress_check.py
 python load-tests/sales_load.py --concurrency 50
 python load-tests/sales_load.py --concurrency 100
 ```
+
+La regresión completa de backend se ejecuta con `make regression`. Las pruebas aisladas levantan servicios y bases temporales, por lo que no alteran los datos locales. La ejecución de n8n y las pruebas del frontend se gestionan por separado.
 
 ## Entregables
 

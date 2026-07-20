@@ -13,9 +13,12 @@ AutoPulse implementa el ciclo comercial automotriz desde el registro del prospec
 
 ## Resultados verificados
 
-- 17 pruebas automatizadas aprobadas.
+- 25 pruebas automatizadas aprobadas.
 - 91% de cobertura de código.
-- 50 ventas simultáneas: p95 de 86,41 ms y 0% de errores.
-- 100 ventas simultáneas: p95 de 96,18 ms y 0% de errores.
+- Integración HTTP completa entre los cuatro microservicios aprobada.
+- 50 ventas simultáneas: p95 de 253,85 ms y 0% de errores.
+- 100 ventas simultáneas: p95 de 996,88 ms y 0% de errores.
+
+Los resultados corresponden a la regresión de backend del 19 de julio de 2026. La ejecución de workflows n8n y las pruebas del frontend conectado se mantienen fuera de esta fase.
 
 El panel principal está disponible en `http://localhost:8004` después de iniciar los contenedores.

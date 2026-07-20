@@ -24,3 +24,9 @@ curl -X POST http://localhost:8002/sales -H 'Content-Type: application/json' -d 
 curl -X POST http://localhost:8003/insurance -H 'Content-Type: application/json' -d '{"sale_id":1,"type":"Todo riesgo","expected_premium":1250,"actual_premium":1190,"status":"sold"}'
 ```
 
+## Conversión por vendedor y por etapa
+
+```bash
+curl http://localhost:8002/sales/conversion
+curl http://localhost:8002/sales/conversion/stages
+```
