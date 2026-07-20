@@ -1,4 +1,4 @@
-.PHONY: run test coverage integration n8n-validate seed load50 load100 stress regression
+.PHONY: run test coverage integration n8n-validate n8n-smoke seed load50 load100 stress regression
 run:
 	docker compose up --build
 test:
@@ -9,6 +9,8 @@ integration:
 	python scripts/integration_check.py --self-contained
 n8n-validate:
 	python scripts/validate_n8n.py
+n8n-smoke:
+	python scripts/n8n_cloud_smoke_check.py
 seed:
 	python scripts/seed.py
 load50:

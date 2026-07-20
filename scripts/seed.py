@@ -9,6 +9,7 @@ def main():
     for i,name in enumerate(names):
         stage=stages[i%len(stages)]; outcome=('won' if i%2==0 else 'lost') if stage=='closed' else None
         pid=execute('INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id,outcome,loss_reason) VALUES(?,?,?,?,?,?,?,?)',(name,f'demo{i+1}@mail.pe',f'999000{i+1:03d}',random.choice(['Toyota Corolla','Kia Sportage','Hyundai Tucson']),stage,1+i%2,outcome,'Presupuesto' if outcome=='lost' else None))
+        if i==0: execute("UPDATE prospects SET last_activity=datetime('now','-5 days') WHERE id=?",(pid,))
         execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)",(pid,'initial'))
         if stage!='initial': execute('INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)',(pid,stage))
         if outcome:
