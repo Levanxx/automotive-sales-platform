@@ -1,4 +1,4 @@
-from shared.db import initialize, query, execute
+from shared.db import LOCK, connect, initialize, query, execute
 from shared.http import Handler, APIError, required, serve
 
 STAGES=('initial','qualification','negotiation','closed')
@@ -19,7 +19,12 @@ def create(h):
 
     stage=d.get('stage','initial')
     if stage not in STAGES: raise APIError(400,'Etapa inválida')
-    pid=execute('INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES(?,?,?,?,?,?)',(d['name'],d['email'],d['phone'],d['vehicle_interest'],stage,d['seller_id']))
+    with LOCK,connect() as conn:
+        cur=conn.execute('INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES(?,?,?,?,?,?)',(d['name'],d['email'],d['phone'],d['vehicle_interest'],stage,d['seller_id']))
+        pid=cur.lastrowid
+        conn.execute('INSERT INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)',(pid,'initial'))
+        if stage!='initial': conn.execute('INSERT INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)',(pid,stage))
+        conn.commit()
     return 201,query('SELECT * FROM prospects WHERE id=?',(pid,),one=True)
 
 def update(h, id):
@@ -33,7 +38,11 @@ def update(h, id):
         raise APIError(400, 'El cierre se registra mediante una venta realizada o fallida')
     if 'outcome' in d or 'loss_reason' in d:
         raise APIError(400, 'El resultado y motivo se registran mediante el servicio de ventas')
-    execute("UPDATE prospects SET stage=?,last_activity=CURRENT_TIMESTAMP WHERE id=?", (stage, id))
+    with LOCK,connect() as conn:
+        conn.execute("UPDATE prospects SET stage=?,last_activity=CURRENT_TIMESTAMP WHERE id=?", (stage, id))
+        if stage!=item['stage']:
+            conn.execute('INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)',(id,stage))
+        conn.commit()
     return 200, query('SELECT * FROM prospects WHERE id=?', (id,), one=True)
 
 def inactive(h):

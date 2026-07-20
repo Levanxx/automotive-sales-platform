@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS prospects(
  loss_reason TEXT, last_activity TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
  FOREIGN KEY(seller_id) REFERENCES sellers(id));
 
+CREATE TABLE IF NOT EXISTS prospect_stage_history(
+ id INTEGER PRIMARY KEY AUTOINCREMENT, prospect_id INTEGER NOT NULL, stage TEXT NOT NULL,
+ entered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(prospect_id,stage), FOREIGN KEY(prospect_id) REFERENCES prospects(id) ON DELETE CASCADE);
+
 CREATE TABLE IF NOT EXISTS sales(
  id INTEGER PRIMARY KEY AUTOINCREMENT, prospect_id INTEGER UNIQUE NOT NULL, vehicle_id INTEGER NOT NULL,
  seller_id INTEGER NOT NULL, amount REAL NOT NULL CHECK(amount>0), status TEXT NOT NULL CHECK(status IN ('completed','failed')),
@@ -53,6 +58,8 @@ def initialize():
         conn.executescript(SCHEMA)
         conn.executemany('INSERT OR IGNORE INTO sellers(id,name,email) VALUES(?,?,?)', [(1,'Ana Torres','ana@autos.pe'),(2,'Luis Vega','luis@autos.pe')])
         conn.executemany('INSERT OR IGNORE INTO vehicles(id,brand,model,year,price) VALUES(?,?,?,?,?)', [(1,'Toyota','Corolla',2026,24990),(2,'Kia','Sportage',2026,31990),(3,'Hyundai','Tucson',2025,29990)])
+        conn.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage,entered_at) SELECT id,'initial',last_activity FROM prospects")
+        conn.execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage,entered_at) SELECT id,stage,last_activity FROM prospects WHERE stage!='initial'")
 
 def query(sql, params=(), one=False):
     with LOCK, connect() as conn:

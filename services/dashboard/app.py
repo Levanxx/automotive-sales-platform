@@ -13,8 +13,8 @@ def metrics(h):
     funnel=query("SELECT stage,COUNT(*) count FROM prospects GROUP BY stage ORDER BY CASE stage WHEN 'initial' THEN 1 WHEN 'qualification' THEN 2 WHEN 'negotiation' THEN 3 ELSE 4 END")
     won=totals['won'] or 0
     lost=totals['lost'] or 0
-    total_closed=won+lost
-    return 200,{'total_prospects':totals['total'] or 0,'active_prospects':totals['active'] or 0,'completed_sales':won,'failed_sales':lost,'conversion_rate':round(100*won/total_closed,2) if total_closed else 0,'linked_insurance':insurance['linked'] or 0,'sold_insurance':insurance['sold'] or 0,'funnel':[dict(x,conversion=round(100*x['count']/(totals['total'] or 1),2)) for x in funnel]}
+    total=totals['total'] or 0
+    return 200,{'total_prospects':total,'active_prospects':totals['active'] or 0,'completed_sales':won,'failed_sales':lost,'conversion_rate':round(100*won/total,2) if total else 0,'linked_insurance':insurance['linked'] or 0,'sold_insurance':insurance['sold'] or 0,'funnel':[dict(x,conversion=round(100*x['count']/(total or 1),2)) for x in funnel]}
 
 def catalogs(h):
     return 200,{'sellers':query('SELECT * FROM sellers ORDER BY name'),'vehicles':query('SELECT * FROM vehicles ORDER BY brand,model')}

@@ -4,7 +4,7 @@ DB=tempfile.NamedTemporaryFile(delete=False); DB.close(); os.environ['DATABASE_P
 from shared.db import initialize,query
 from shared.http import APIError
 from services.prospects.app import create as create_prospect, update
-from services.sales.app import create as create_sale, conversion
+from services.sales.app import create as create_sale, conversion, stage_conversion
 from services.insurance.app import create as create_insurance
 from services.dashboard.app import metrics
 
@@ -43,7 +43,10 @@ class ServicesTest(unittest.TestCase):
         with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'actual_premium':-1,'status':'sold'}))
         with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'status':'sold'}))
     def test_metrics_and_conversion(self):
-        data=metrics(Fake())[1]; self.assertIn('conversion_rate',data); self.assertIsInstance(data['funnel'],list)
+        data=metrics(Fake())[1]; self.assertEqual(data['conversion_rate'],round(100*data['completed_sales']/data['total_prospects'],2)); self.assertIsInstance(data['funnel'],list)
         self.assertEqual(conversion(Fake())[0],200)
+        stages=stage_conversion(Fake())[1]
+        self.assertEqual([x['stage'] for x in stages],['initial','qualification','negotiation','closed'])
+        self.assertTrue(all('from_initial_rate' in x and 'from_previous_rate' in x for x in stages))
 
 if __name__=='__main__': unittest.main()

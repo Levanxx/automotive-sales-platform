@@ -9,9 +9,10 @@ def main():
     for i,name in enumerate(names):
         stage=stages[i%len(stages)]; outcome=('won' if i%2==0 else 'lost') if stage=='closed' else None
         pid=execute('INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id,outcome,loss_reason) VALUES(?,?,?,?,?,?,?,?)',(name,f'demo{i+1}@mail.pe',f'999000{i+1:03d}',random.choice(['Toyota Corolla','Kia Sportage','Hyundai Tucson']),stage,1+i%2,outcome,'Presupuesto' if outcome=='lost' else None))
+        execute("INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)",(pid,'initial'))
+        if stage!='initial': execute('INSERT OR IGNORE INTO prospect_stage_history(prospect_id,stage) VALUES(?,?)',(pid,stage))
         if outcome:
             sid=execute('INSERT INTO sales(prospect_id,vehicle_id,seller_id,amount,status,loss_reason) VALUES(?,?,?,?,?,?)',(pid,1+i%3,1+i%2,24000+i*600,'completed' if outcome=='won' else 'failed','Presupuesto' if outcome=='lost' else None))
             if outcome=='won': execute('INSERT INTO insurance(sale_id,type,expected_premium,actual_premium,status) VALUES(?,?,?,?,?)',(sid,'Todo riesgo',1250,1190,'sold'))
     print('Datos de demostración creados.')
 if __name__=='__main__': main()
-

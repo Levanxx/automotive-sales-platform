@@ -26,6 +26,11 @@ class ContractTests(unittest.TestCase):
     def test_catalogs(self):
         status,data=catalogs(Fake()); self.assertEqual(status,200)
         self.assertGreaterEqual(len(data['sellers']),2); self.assertGreaterEqual(len(data['vehicles']),3)
+    def test_stage_history_backfill(self):
+        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Historial','history@x.pe','1','Auto','negotiation',1)")
+        initialize()
+        stages={x['stage'] for x in query("SELECT stage FROM prospect_stage_history WHERE prospect_id=(SELECT id FROM prospects WHERE email='history@x.pe')")}
+        self.assertEqual(stages,{'initial','negotiation'})
     def test_performance_storage(self):
         payload={'concurrency':100,'requests':100,'success':100,'error_rate_percent':0,'duration_seconds':1.2,'avg_ms':200,'p95_ms':450,'max_ms':500,'acceptance_p95_under_2000ms':True}
         self.assertEqual(save_performance(Fake(payload))[0],201)
