@@ -103,6 +103,7 @@ CREATE INDEX IF NOT EXISTS ix_ventas_estado ON sales(status);
                     cur.execute("INSERT INTO vehicles(id,brand,model,year,price,imagen) VALUES(1,'Toyota','Corolla',2026,24990,'https://images.unsplash.com/photo-1621007947382-bb3c39934b6e?w=300') ON CONFLICT DO NOTHING")
                     cur.execute("INSERT INTO vehicles(id,brand,model,year,price,imagen) VALUES(2,'Kia','Sportage',2026,31990,'https://images.unsplash.com/photo-1549399542-7e8f8b658f9d?w=300') ON CONFLICT DO NOTHING")
                     cur.execute("INSERT INTO vehicles(id,brand,model,year,price,imagen) VALUES(3,'Hyundai','Tucson',2025,29990,'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=300') ON CONFLICT DO NOTHING")
+                    cur.execute("SELECT setval('vehicles_id_seq', (SELECT MAX(id) FROM vehicles))")
         finally:
             conn.close()
 
