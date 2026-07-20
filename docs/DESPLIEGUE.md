@@ -18,9 +18,11 @@ El panel queda en `http://localhost:8004`. La aplicación usa SQLite compartido 
 
 Inicie Oracle con `docker compose --profile oracle up oracle`. Espere el estado saludable y ejecute, en orden, `database/oracle/001_schema.sql` y `002_seed.sql` con SQLcl o SQL Developer. Los scripts DDL/DML incluyen integridad referencial e índices. La implementación de demostración usa SQLite; la capa de persistencia es el punto de sustitución para un driver Oracle.
 
-## n8n
+## n8n Cloud
 
-Copie `.env.example` como `.env`, configure `ALERT_WEBHOOK_URL` para Teams, Slack u otro receptor HTTP e inicie con `docker compose --profile automation up n8n`. Abra `http://localhost:5678`, importe los dos JSON de `n8n/` y active los flujos. Las URLs internas ya apuntan a los servicios Compose.
+La entrega utiliza n8n Cloud. Publique primero los microservicios mediante HTTPS, configure `N8N_AUTOMATION_KEY` en prospectos y dashboard, y ejecute `python scripts/n8n_cloud_smoke_check.py` contra las URLs públicas.
+
+Importe los cuatro JSON de `n8n/`, cree la credencial Header Auth `X-Automation-Key`, sustituya las URLs de ejemplo y configure el manejador global de errores. El procedimiento completo y la lista de evidencias están en `docs/N8N_CLOUD.md`. El perfil Docker `automation` se conserva únicamente como alternativa local.
 
 ## Verificación
 
@@ -29,6 +31,7 @@ python scripts/seed.py
 python -m unittest discover -s tests -v
 python scripts/integration_check.py --self-contained
 python scripts/stress_check.py
+python scripts/validate_n8n.py
 make regression
 ```
 

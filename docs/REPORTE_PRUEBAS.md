@@ -2,11 +2,11 @@
 
 ## Alcance
 
-La regresión cubre los microservicios de prospectos, ventas, seguros y métricas, la persistencia SQLite, la estructura de los scripts Oracle y los escenarios de carga. El frontend y la ejecución de workflows n8n quedan fuera de esta fase.
+La regresión cubre los microservicios de prospectos, ventas, seguros y métricas, la persistencia SQLite, la estructura de los scripts Oracle, los escenarios de carga y la estructura de los cuatro workflows n8n Cloud. El frontend y la ejecución dentro de la cuenta n8n Cloud quedan fuera de la regresión local.
 
 ## Pruebas unitarias y de contrato
 
-El 19 de julio de 2026 se ejecutaron 25 pruebas automatizadas. Todas aprobaron. La cobertura de líneas y ramas fue 91%, por encima del mínimo requerido de 80%.
+La suite contiene 28 pruebas automatizadas. Todas aprobaron. La cobertura final de líneas y ramas es 91%, por encima del umbral obligatorio de 80%.
 
 La suite verifica validaciones, historial de etapas, cierre mediante venta, coherencia de vendedor, ventas fallidas, primas, seguros vinculados, conversión global, por vendedor y por etapa, integridad referencial, almacenamiento de rendimiento y contratos HTTP.
 
@@ -35,13 +35,19 @@ El recorrido completo aprobó sin errores.
 
 El criterio automatizado es p95 menor a 2.000 ms. Los dos escenarios cumplieron.
 
+## n8n Cloud
+
+`python scripts/validate_n8n.py` comprueba que estén presentes los cuatro workflows, que sus conexiones apunten a nodos existentes, que tengan triggers y zona horaria, que se importen inactivos y que no contengan URLs internas, `$env` ni credenciales reales.
+
+`python scripts/n8n_cloud_smoke_check.py` valida el backend público antes de importar: salud, autenticación, inactividad, métricas y almacenamiento de alertas. La prueba final dentro de n8n Cloud requiere completar la lista de evidencias de `docs/N8N_CLOUD.md`.
+
 ## Regresión
 
-`make regression` ejecuta cobertura con umbral obligatorio e integración aislada. La misma secuencia forma parte de GitHub Actions para cada push y pull request.
+`make regression` ejecuta cobertura con umbral obligatorio, integración aislada y validación de workflows n8n. La misma secuencia forma parte de GitHub Actions para cada push y pull request.
 
 ## Recomendaciones
 
 - Repetir la regresión cuando se conecte el nuevo frontend.
-- Ejecutar y observar los workflows n8n cuando se complete esa fase.
+- Completar la lista de evidencias después de importar y publicar los workflows en n8n Cloud.
 - Repetir la carga sobre Oracle antes de usarlo como persistencia integrada.
 - Añadir una prueba sostenida de al menos cinco minutos antes de producción.

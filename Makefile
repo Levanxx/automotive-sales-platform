@@ -10,7 +10,7 @@ integration:
 n8n-validate:
 	python scripts/validate_n8n.py
 n8n-smoke:
-	python scripts/n8n_cloud_smoke_check.py
+	python scripts/n8n_cloud_smoke_check.py --self-contained
 seed:
 	python scripts/seed.py
 load50:

@@ -22,13 +22,15 @@ python load-tests/sales_load.py --concurrency 50
 python load-tests/sales_load.py --concurrency 100
 ```
 
-La regresión completa de backend se ejecuta con `make regression`. Las pruebas aisladas levantan servicios y bases temporales, por lo que no alteran los datos locales. La ejecución de n8n y las pruebas del frontend se gestionan por separado.
+La regresión completa de backend se ejecuta con `make regression`. Las pruebas aisladas levantan servicios y bases temporales, por lo que no alteran los datos locales. La ejecución dentro de la cuenta n8n Cloud y las pruebas del frontend se gestionan por separado.
+
+Los workflows preparados para n8n Cloud están en `n8n/`. Valídelos con `make n8n-validate` y siga [docs/N8N_CLOUD.md](docs/N8N_CLOUD.md) para importar, configurar, probar y reunir evidencias.
 
 ## Entregables
 
 - `services/`: cuatro microservicios y frontend responsive.
 - `database/oracle/`: DDL y DML Oracle 23ai Free.
-- `n8n/`: seguimiento de inactivos y sincronización de métricas.
+- `n8n/`: inactividad, sincronización, salud de servicios y manejo global de errores.
 - `tests/` y `load-tests/`: pruebas funcionales, integración y estrés.
 - `docs/`: manual, despliegue, arquitectura y reporte de pruebas.
 
