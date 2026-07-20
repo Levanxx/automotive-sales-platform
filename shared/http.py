@@ -15,7 +15,7 @@ class Handler(BaseHTTPRequestHandler):
     def _send(self, status, body=None, content_type='application/json'):
         data = b'' if body is None else (json.dumps(body, ensure_ascii=False).encode() if content_type == 'application/json' else body)
         self.send_response(status); self.send_header('Content-Type', content_type); self.send_header('Access-Control-Allow-Origin','*')
-        self.send_header('Access-Control-Allow-Headers','Content-Type'); self.send_header('Access-Control-Allow-Methods','GET,POST,PATCH,OPTIONS')
+        self.send_header('Access-Control-Allow-Headers','Content-Type');         self.send_header('Access-Control-Allow-Methods','GET,POST,PATCH,DELETE,OPTIONS')
         self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
     def _body(self):
         try: return json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))) or b'{}')
@@ -24,6 +24,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self): self._dispatch('GET')
     def do_POST(self): self._dispatch('POST')
     def do_PATCH(self): self._dispatch('PATCH')
+    def do_DELETE(self): self._dispatch('DELETE')
     def _dispatch(self, method):
         path = urlparse(self.path).path
         try:

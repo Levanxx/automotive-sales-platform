@@ -34,13 +34,13 @@ class ContractTests(unittest.TestCase):
         status,data=save_alert(Fake({'event':'inactive_prospect','message':'Prospecto inactivo'}))
         self.assertEqual(status,201); self.assertTrue(data['received'])
     def test_load_cleanup(self):
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id) VALUES('Load','load-clean@test.pe','1','Auto','initial',1)")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id) VALUES('Load','load-clean@test.pe','1',1,'initial',1)")
         status,data=cleanup_load_data(Fake()); self.assertEqual(status,200); self.assertGreaterEqual(data['deleted_prospects'],1)
     def test_list_queries_and_not_found(self):
         self.assertEqual(prospects_list(Fake())[0],200); self.assertEqual(sales_list(Fake())[0],200); self.assertEqual(insurance_list(Fake())[0],200)
         with self.assertRaises(APIError): get_one(Fake(),'999999')
     def test_inactive_contract(self):
-        execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id,last_activity) VALUES('Inactivo','i@x.pe','1','Auto','initial',1,'2020-01-01')")
+        execute("INSERT INTO prospects(name,email,phone,vehicle_id,stage,seller_id,last_activity) VALUES('Inactivo','i@x.pe','1',1,'initial',1,'2020-01-01')")
         result=inactive(Fake(headers={'X-Inactivity-Days':'3'}))[1]
         self.assertTrue(any(x['name']=='Inactivo' for x in result))
     def test_n8n_workflows_are_importable(self):
