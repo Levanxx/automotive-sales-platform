@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from pathlib import Path
 from shared.db import LOCK,connect,initialize,query,execute
 from shared.http import Handler,APIError,serve,required
@@ -7,19 +8,39 @@ class Dashboard(Handler):
         if self.path in ('/','/index.html'):
             data=(Path(__file__).parent/'index.html').read_bytes(); return self._send(200,data,'text/html; charset=utf-8')
         super().do_GET()
+
+COLORS = ['#2952e3','#17b26a','#f79009','#7a5af8','#e84c3d','#19b8cb']
+
 def metrics(h):
     with LOCK, connect() as conn:
         totals=conn.execute("SELECT COUNT(*) total, SUM(CASE WHEN stage!='closed' THEN 1 ELSE 0 END) active, SUM(CASE WHEN outcome='won' THEN 1 ELSE 0 END) won, SUM(CASE WHEN outcome='lost' THEN 1 ELSE 0 END) lost FROM prospects").fetchone()
         insurance=conn.execute("SELECT COUNT(*) linked, SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) sold FROM insurance").fetchone()
         funnel_raw=conn.execute("SELECT stage,COUNT(*) count FROM prospects GROUP BY stage").fetchall()
         sales_amount=conn.execute("SELECT COALESCE(SUM(amount),0) total_amount FROM sales WHERE status='completed'").fetchone()
+        monthly_raw=conn.execute("SELECT created_at, amount FROM sales WHERE status='completed'").fetchall()
+        ins_types_raw=conn.execute("SELECT type, COUNT(*) as count FROM insurance GROUP BY type").fetchall()
     funnel_map={r['stage']:r['count'] for r in funnel_raw}
     total=totals['total'] or 1
     funnel=[{'stage':s,'count':funnel_map.get(s,0),'conversion':round(100*funnel_map.get(s,0)/total,2)} for s in ('initial','qualification','negotiation','closed')]
     won=totals['won'] or 0
     lost=totals['lost'] or 0
     total_closed=won+lost
-    return 200,{'total_prospects':totals['total'] or 0,'active_prospects':totals['active'] or 0,'completed_sales':won,'failed_sales':lost,'conversion_rate':round(100*won/total_closed,2) if total_closed else 0,'linked_insurance':insurance['linked'] or 0,'sold_insurance':insurance['sold'] or 0,'ventas_del_mes':sales_amount['total_amount'] or 0,'funnel':funnel}
+
+    monthly=defaultdict(float)
+    for r in monthly_raw:
+        key=str(r['created_at'] or '')[:7]
+        if key: monthly[key]+=r['amount']
+    months=[{'mes':k,'monto':v} for k,v in sorted(monthly.items())]
+    months_name={'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'}
+    monthly_sales=[]
+    for m in months:
+        mm=m['mes'].split('-')[1]
+        monthly_sales.append({'mes':months_name.get(mm,mm),'monto':m['monto']})
+
+    total_ins=sum(r['count'] for r in ins_types_raw) or 1
+    insurance_types=[{'tipo':r['type'],'valor':round(100*r['count']/total_ins,1),'color':COLORS[i%len(COLORS)]} for i,r in enumerate(ins_types_raw)]
+
+    return 200,{'total_prospects':totals['total'] or 0,'active_prospects':totals['active'] or 0,'completed_sales':won,'failed_sales':lost,'conversion_rate':round(100*won/total_closed,2) if total_closed else 0,'linked_insurance':insurance['linked'] or 0,'sold_insurance':insurance['sold'] or 0,'ventas_del_mes':sales_amount['total_amount'] or 0,'funnel':funnel,'monthly_sales':monthly_sales,'insurance_types':insurance_types}
 
 def catalogs(h):
     return 200,{'sellers':query('SELECT * FROM sellers ORDER BY name'),'vehicles':query('SELECT * FROM vehicles ORDER BY brand,model')}
