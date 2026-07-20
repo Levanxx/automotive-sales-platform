@@ -1,5 +1,4 @@
-import sqlite3
-from shared.db import initialize,query,execute
+from shared.db import initialize,query,execute,IntegrityError
 from shared.http import Handler,APIError,required,serve
 class Insurance(Handler): pass
 def list_all(h): return 200,query('''SELECT i.*,s.prospect_id,p.name prospect_name,
@@ -20,7 +19,7 @@ def create(h):
     sale=query("SELECT * FROM sales WHERE id=? AND status='completed'",(d['sale_id'],),one=True)
     if not sale: raise APIError(400,'El seguro requiere una venta efectiva')
     try: iid=execute('INSERT INTO insurance(sale_id,type,expected_premium,actual_premium,status) VALUES(?,?,?,?,?)',(d['sale_id'],d['type'],d['expected_premium'],d.get('actual_premium'),d['status']))
-    except sqlite3.IntegrityError: raise APIError(409,'La venta ya tiene seguro')
+    except IntegrityError: raise APIError(409,'La venta ya tiene seguro')
     return 201,query('SELECT * FROM insurance WHERE id=?',(iid,),one=True)
 def get_one_insurance(h,id):
     item=query("""SELECT i.*,s.prospect_id,p.name prospect_name,

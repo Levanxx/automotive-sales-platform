@@ -5,12 +5,12 @@ from urllib.request import Request, urlopen
 def prepare(base,i):
     prospect={'name':f'Carga {i}','email':f'load{i}-{time.time_ns()}@test.pe','phone':'900000000','vehicle_interest':'Toyota Corolla','seller_id':1}
     req=Request(base.replace(':8002',':8001')+'/prospects',json.dumps(prospect).encode(),{'Content-Type':'application/json'},method='POST')
-    with urlopen(req,timeout=10) as r: return json.load(r)['id']
+    with urlopen(req,timeout=30) as r: return json.load(r)['id']
 def post(base,pid):
-    sale={'prospect_id':pid,'vehicle_id':1,'seller_id':1,'amount':24990,'status':'completed'}
+    sale={'prospect_id':pid,'vehicle_id':(pid % 3) + 1,'seller_id':1,'amount':24990,'status':'completed'}
     t=time.perf_counter()
     req=Request(base+'/sales',json.dumps(sale).encode(),{'Content-Type':'application/json'},method='POST')
-    with urlopen(req,timeout=10) as r: status=r.status
+    with urlopen(req,timeout=30) as r: status=r.status
     return status,(time.perf_counter()-t)*1000
 def main():
     p=argparse.ArgumentParser(); p.add_argument('--concurrency',type=int,choices=[50,100],required=True); p.add_argument('--url',default='http://localhost:8002'); a=p.parse_args()

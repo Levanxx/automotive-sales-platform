@@ -13,7 +13,7 @@ class Handler(BaseHTTPRequestHandler):
     routes = {}
     def log_message(self, fmt, *args): pass
     def _send(self, status, body=None, content_type='application/json'):
-        data = b'' if body is None else (json.dumps(body, ensure_ascii=False).encode() if content_type == 'application/json' else body)
+        data = b'' if body is None else (json.dumps(body, ensure_ascii=False, default=str).encode() if content_type == 'application/json' else body)
         self.send_response(status); self.send_header('Content-Type', content_type); self.send_header('Access-Control-Allow-Origin','*')
         self.send_header('Access-Control-Allow-Headers','Content-Type');         self.send_header('Access-Control-Allow-Methods','GET,POST,PATCH,DELETE,OPTIONS')
         self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)

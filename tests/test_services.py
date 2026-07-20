@@ -1,6 +1,7 @@
 import io,json,os,tempfile,unittest
 from pathlib import Path
 DB=tempfile.NamedTemporaryFile(delete=False); DB.close(); os.environ['DATABASE_PATH']=DB.name
+os.environ['DATABASE_URL'] = ''
 from shared.db import initialize,query
 from shared.http import APIError
 from services.prospects.app import create as create_prospect, update
@@ -15,7 +16,7 @@ class ServicesTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls): initialize()
     def prospect(self,n='A'):
-        return create_prospect(Fake({'name':n,'email':n+'@x.pe','phone':'999','vehicle_id':1,'seller_id':1}))[1]
+        return create_prospect(Fake({'name':n,'email':n+'@x.pe','phone':'999000000','vehicle_id':1,'seller_id':1}))[1]
     def test_prospect_lifecycle(self):
         p=self.prospect('life'); self.assertEqual(p['stage'],'initial')
         result=update(Fake({'stage':'qualification'}),str(p['id']))[1]; self.assertEqual(result['stage'],'qualification')
@@ -114,17 +115,17 @@ class ServicesTest(unittest.TestCase):
         self.assertIn('registrado',str(ctx.exception).lower())
 
     def test_create_prospect_with_vehicle_fk(self):
-        p=create_prospect(Fake({'name':'FK Test','email':'fk@x.pe','phone':'999','vehicle_id':1,'seller_id':1}))[1]
+        p=create_prospect(Fake({'name':'FK Test','email':'fk@x.pe','phone':'999000000','vehicle_id':1,'seller_id':1}))[1]
         self.assertEqual(p['vehicle_id'],1)
         self.assertEqual(p['vehicle_name'],'Toyota Corolla (2026)')
 
     def test_create_prospect_invalid_vehicle(self):
         with self.assertRaises(APIError) as ctx:
-            create_prospect(Fake({'name':'BadV','email':'bv@x.pe','phone':'999','vehicle_id':999,'seller_id':1}))
+            create_prospect(Fake({'name':'BadV','email':'bv@x.pe','phone':'999000000','vehicle_id':999,'seller_id':1}))
         self.assertIn('Vehículo',str(ctx.exception))
 
     def test_prospect_no_vehicle_optional(self):
-        p=create_prospect(Fake({'name':'NoVeh','email':'nov@x.pe','phone':'999','seller_id':1}))[1]
+        p=create_prospect(Fake({'name':'NoVeh','email':'nov@x.pe','phone':'999000000','seller_id':1}))[1]
         self.assertIsNone(p['vehicle_id'])
 
 if __name__=='__main__': unittest.main()

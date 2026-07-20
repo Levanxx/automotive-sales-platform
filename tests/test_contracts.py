@@ -2,6 +2,7 @@ import io, json, os, tempfile, unittest
 from pathlib import Path
 
 DB=tempfile.NamedTemporaryFile(delete=False); DB.close(); os.environ['DATABASE_PATH']=DB.name
+os.environ['DATABASE_URL'] = ''
 from shared.db import initialize, query, execute
 from shared.http import APIError, Handler, match_path, required
 from services.prospects.app import inactive, get_one, list_all as prospects_list

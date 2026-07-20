@@ -1,2 +1,199 @@
-{"name":"Sincronización y control de servicios","nodes":[{"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":15}]}},"id":"schedule","name":"Cada 15 minutos","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[200,300]},{"parameters":{"url":"http://dashboard:8004/api/metrics"},"id":"metrics","name":"Consolidar métricas","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[450,300]},{"parameters":{"conditions":{"options":{"caseSensitive":true},"conditions":[{"leftValue":"={{ $json.total_prospects }}","rightValue":0,"operator":{"type":"number","operation":"gte"}}]}},"id":"check","name":"Validar sincronización","type":"n8n-nodes-base.if","typeVersion":2.2,"position":[700,300]}],"connections":{"Cada 15 minutos":{"main":[[{"node":"Consolidar métricas","type":"main","index":0}]]},"Consolidar métricas":{"main":[[{"node":"Validar sincronización","type":"main","index":0}]]}},"active":false,"settings":{"executionOrder":"v1"}}
-
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "b2b45238-fd6b-463e-a714-cbce29d5ee3e",
+      "name": "Cada 15 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8004/api/metrics",
+        "options": {}
+      },
+      "id": "376a7d75-4c65-44af-9147-444cb1854232",
+      "name": "Consolidar métricas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.total_prospects }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "id": "479e4841-69ae-4a18-9dfe-6a045972498f"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2950d514-4f63-4382-9629-2388766d0ddf",
+      "name": "Validar sincronización",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0].json;\nreturn [{\n  json: {\n    message: `📊 AutoPulse - Resumen\n🟢 Prospectos: ${item.total_prospects} (${item.active_prospects} activos)\n🟢 Ventas completadas: ${item.completed_sales}\n🟢 Tasa conversión: ${item.conversion_rate}%\n🟢 Seguros vinculados: ${item.linked_insurance}\n🟢 Ventas del mes: $${item.ventas_del_mes?.toLocaleString()}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -80
+      ],
+      "id": "e88b6814-a574-478c-b28a-17a3f173ac93",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "chatId": "6599442607",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        -80
+      ],
+      "id": "b73bdbb9-0b03-4c67-9dfc-8fecea5ee530",
+      "name": "Telegram",
+      "webhookId": "ef267964-6c7d-4fae-b24f-6ea378b84ec8",
+      "credentials": {
+        "telegramApi": {
+          "id": "pdAeSCfTvDi2CINe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6599442607",
+        "text": "Servicio dashboard no responde o métricas inválidas",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        180
+      ],
+      "id": "bc535e01-6a43-4468-adb8-ef681aa6c667",
+      "name": "Telegram1",
+      "webhookId": "4bdbba29-7d13-4641-9f26-8d318a328f6c",
+      "credentials": {
+        "telegramApi": {
+          "id": "pdAeSCfTvDi2CINe",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cada 15 minutos": {
+      "main": [
+        [
+          {
+            "node": "Consolidar métricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar métricas": {
+      "main": [
+        [
+          {
+            "node": "Validar sincronización",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        []
+      ]
+    },
+    "Validar sincronización": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6afe995c-fb1d-434b-a3dc-1bd8cd81be0c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71842499283e604aebb06cb07cba67876bba0f2551aa898f858467449017f702"
+  },
+  "id": "tWXVF8TMbV99skpe",
+  "tags": []
+}

@@ -1,49 +1,17 @@
 name: automotive-sales
 services:
-  prospects:
-    build: .
-    command: python -m services.prospects.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8001]
-    volumes: [app-data:/data]
-    ports: ["8001:8001"]
-  sales:
-    build: .
-    command: python -m services.sales.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8002]
-    volumes: [app-data:/data]
-    ports: ["8002:8002"]
-  insurance:
-    build: .
-    command: python -m services.insurance.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8003]
-    volumes: [app-data:/data]
-    ports: ["8003:8003"]
-  dashboard:
-    build: .
-    command: python -m services.dashboard.app
-    environment: [DATABASE_PATH=/data/automotive.db, PORT=8004]
-    volumes: [app-data:/data]
-    ports: ["8004:8004"]
   n8n:
     image: n8nio/n8n:1.82.3
     ports: ["5678:5678"]
     environment:
       - N8N_SECURE_COOKIE=false
       - N8N_DIAGNOSTICS_ENABLED=false
-      - INACTIVITY_DAYS=${INACTIVITY_DAYS:-3}
-      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-http://dashboard:8004/api/alerts}
+      - INACTIVITY_DAYS=3
+      - ALERT_WEBHOOK_URL=http://host.docker.internal:8004/api/alerts
     volumes:
       - n8n-data:/home/node/.n8n
       - ./n8n:/workflows:ro
-    profiles: [automation]
-  oracle:
-    image: container-registry.oracle.com/database/free:23.5.0.0-lite
-    ports: ["1521:1521"]
-    environment:
-      - ORACLE_PWD=Automotive23ai
-    volumes: [oracle-data:/opt/oracle/oradata]
-    profiles: [oracle]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 volumes:
-  app-data:
   n8n-data:
-  oracle-data:

@@ -39,14 +39,20 @@ def save_alert(h):
 
 def cleanup_load_data(h):
     with LOCK,connect() as conn:
-        count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE 'load%@test.pe'").fetchone()[0]
+        count=conn.execute("SELECT COUNT(*) FROM prospects WHERE email LIKE 'load%@test.pe'").fetchone()['count']
         conn.execute("DELETE FROM sales WHERE prospect_id IN (SELECT id FROM prospects WHERE email LIKE 'load%@test.pe')")
         conn.execute("DELETE FROM prospects WHERE email LIKE 'load%@test.pe'"); conn.commit()
     return 200,{'deleted_prospects':count}
 
 def create_vehicle(h):
     d=h._body(); required(d,'brand','model','year','price')
-    vid=execute('INSERT INTO vehicles(brand,model,year,price,imagen) VALUES(?,?,?,?,?)',(d['brand'],d['model'],int(d['year']),float(d['price']),d.get('imagen')))
+    year_val = int(d['year'])
+    if year_val < 1900 or year_val > 2100:
+        raise APIError(400, 'Año inválido: debe estar entre 1900 y 2100')
+    price_val = float(d['price'])
+    if price_val <= 0:
+        raise APIError(400, 'Precio inválido: debe ser mayor a cero')
+    vid=execute('INSERT INTO vehicles(brand,model,year,price,imagen) VALUES(?,?,?,?,?)',(d['brand'],d['model'],year_val,price_val,d.get('imagen')))
     return 201,query('SELECT * FROM vehicles WHERE id=?',(vid,),one=True)
 
 def create_seller(h):

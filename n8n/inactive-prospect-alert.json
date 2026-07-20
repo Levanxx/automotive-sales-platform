@@ -1,1 +1,130 @@
-{"name":"Alerta de prospectos inactivos","nodes":[{"parameters":{"rule":{"interval":[{"field":"hours","hoursInterval":24}]}},"id":"schedule","name":"Revisión diaria","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[160,300]},{"parameters":{"url":"http://prospects:8001/prospects/inactive","sendHeaders":true,"headerParameters":{"parameters":[{"name":"X-Inactivity-Days","value":"={{ $env.INACTIVITY_DAYS || 3 }}"}]}},"id":"get","name":"Obtener inactivos","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[400,300]},{"parameters":{"jsCode":"return items.map(i => ({json:{event:'inactive_prospect',message:`Prospecto inactivo: ${i.json.name}`,prospect:i.json}}));"},"id":"format","name":"Preparar alerta","type":"n8n-nodes-base.code","typeVersion":2,"position":[640,300]},{"parameters":{"method":"POST","url":"={{ $env.ALERT_WEBHOOK_URL }}","sendBody":true,"contentType":"raw","rawContentType":"application/json","body":"={{ JSON.stringify($json) }}","options":{}},"id":"notify","name":"Enviar alerta","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[880,300]}],"connections":{"Revisión diaria":{"main":[[{"node":"Obtener inactivos","type":"main","index":0}]]},"Obtener inactivos":{"main":[[{"node":"Preparar alerta","type":"main","index":0}]]},"Preparar alerta":{"main":[[{"node":"Enviar alerta","type":"main","index":0}]]}},"active":false,"settings":{"executionOrder":"v1"}}
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "57b4155a-3367-4142-beec-2cda9a029745",
+      "name": "Revisión diaria",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8001/prospects/inactive",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Inactivity-Days",
+              "value": "={{ $env.INACTIVITY_DAYS || 3 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5fde8706-fa4e-44f7-b617-8aea626d3040",
+      "name": "Obtener inactivos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(i => ({json:{event:'inactive_prospect',message:`Prospecto inactivo: ${i.json.name}`,prospect:i.json}}));"
+      },
+      "id": "a899f309-d6ba-47d3-9428-2d030fbdb1e0",
+      "name": "Preparar alerta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6599442607",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        980,
+        -240
+      ],
+      "id": "1827747e-4889-48cf-8fb7-915cb23ed9ba",
+      "name": "Telegram",
+      "webhookId": "25ce41c6-a392-4c6b-aa5a-7fb290c5d07a",
+      "credentials": {
+        "telegramApi": {
+          "id": "pdAeSCfTvDi2CINe",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Revisión diaria": {
+      "main": [
+        [
+          {
+            "node": "Obtener inactivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener inactivos": {
+      "main": [
+        [
+          {
+            "node": "Preparar alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar alerta": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "21c00b6b-3327-4541-b963-2403fde846a5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71842499283e604aebb06cb07cba67876bba0f2551aa898f858467449017f702"
+  },
+  "id": "p18UONuUT3jL3A35",
+  "tags": []
+}

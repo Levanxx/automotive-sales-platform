@@ -1,3 +1,5 @@
+import re
+from datetime import datetime, timedelta, timezone
 from shared.db import initialize, LOCK, connect, query, execute
 from shared.http import Handler, APIError, required, serve
 
@@ -20,6 +22,14 @@ def create(h):
 
     seller = query('SELECT id FROM sellers WHERE id=?', (d['seller_id'],), one=True)
     if not seller: raise APIError(400, f'Vendedor id={d["seller_id"]} no encontrado')
+
+    phone = d.get('phone', '')
+    if not re.match(r'^\+?\d{7,15}$', phone):
+        raise APIError(400, 'Teléfono inválido: debe tener 7-15 dígitos, puede iniciar con +')
+
+    email = d.get('email', '')
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        raise APIError(400, 'Email inválido')
 
     vehicle_id = d.get('vehicle_id')
     if vehicle_id is not None:
@@ -65,6 +75,8 @@ def update(h, id):
     return 200, query("SELECT p.*,COALESCE(v.brand||' '||v.model||' ('||v.year||')','') vehicle_name FROM prospects p LEFT JOIN vehicles v ON v.id=p.vehicle_id WHERE p.id=?", (id,), one=True)
 
 def inactive(h):
-    return 200,query("SELECT * FROM prospects WHERE stage!='closed' AND julianday('now')-julianday(last_activity)>=?",(int(h.headers.get('X-Inactivity-Days','3')),))
+    days = int(h.headers.get('X-Inactivity-Days', '3'))
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
+    return 200, query("SELECT * FROM prospects WHERE stage!='closed' AND last_activity <= ?", (cutoff,))
 Prospects.routes={('GET','/prospects'):list_all,('GET','/prospects/inactive'):inactive,('GET','/prospects/{id}'):get_one,('POST','/prospects'):create,('PATCH','/prospects/{id}'):update}
 if __name__=='__main__': initialize(); serve(Prospects,8001)

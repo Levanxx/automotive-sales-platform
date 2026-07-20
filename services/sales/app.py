@@ -25,9 +25,9 @@ def create(h):
         with LOCK, connect() as c:
             ps = c.execute('SELECT stage FROM prospects WHERE id=?', (d['prospect_id'],)).fetchone()
             if ps is None: raise APIError(400, 'Prospecto no encontrado')
-            if ps[0] == 'closed': raise APIError(409, 'El prospecto ya está cerrado')
+            if ps['stage'] == 'closed': raise APIError(409, 'El prospecto ya está cerrado')
             v = c.execute('SELECT sold FROM vehicles WHERE id=?', (d['vehicle_id'],)).fetchone()
-            if d['status'] == 'completed' and v[0] > 0:
+            if d['status'] == 'completed' and v['sold'] > 0:
                 raise APIError(400, 'Este vehículo ya fue vendido')
             cur=c.execute('INSERT INTO sales(prospect_id,vehicle_id,seller_id,amount,status,loss_reason) VALUES(?,?,?,?,?,?)',(d['prospect_id'],d['vehicle_id'],d['seller_id'],d['amount'],d['status'],d.get('loss_reason')))
             c.execute('UPDATE prospects SET stage=?,outcome=?,loss_reason=?,last_activity=CURRENT_TIMESTAMP WHERE id=?',('closed','won' if d['status']=='completed' else 'lost',d.get('loss_reason'),d['prospect_id']))
