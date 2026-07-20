@@ -1,3 +1,4 @@
+import sqlite3
 from shared.db import initialize, query, execute, LOCK, connect
 from shared.http import Handler, APIError, required, serve
 class Sales(Handler): pass
@@ -15,8 +16,11 @@ def create(h):
     prospect = query('SELECT * FROM prospects WHERE id=?', (d['prospect_id'],), one=True)
     if not prospect: raise APIError(400, 'Prospecto no encontrado')
     if prospect['stage'] == 'closed': raise APIError(400, 'El prospecto ya está cerrado')
+    if prospect['seller_id'] != d['seller_id']:
+        raise APIError(400, 'El vendedor debe coincidir con el asignado al prospecto')
 
-    if d['amount'] <= 0: raise APIError(400, 'El monto debe ser mayor a cero')
+    if isinstance(d['amount'], bool) or not isinstance(d['amount'], (int, float)) or d['amount'] <= 0:
+        raise APIError(400, 'El monto debe ser un número mayor a cero')
     if d['status'] not in ('completed', 'failed'): raise APIError(400, 'Estado inválido')
     
     if d['status']=='failed' and not d.get('loss_reason'): raise APIError(400,'Indique el motivo de pérdida')
@@ -26,7 +30,7 @@ def create(h):
             cur=c.execute('INSERT INTO sales(prospect_id,vehicle_id,seller_id,amount,status,loss_reason) VALUES(?,?,?,?,?,?)',(d['prospect_id'],d['vehicle_id'],d['seller_id'],d['amount'],d['status'],d.get('loss_reason')))
             c.execute('UPDATE prospects SET stage=?,outcome=?,loss_reason=?,last_activity=CURRENT_TIMESTAMP WHERE id=?',('closed','won' if d['status']=='completed' else 'lost',d.get('loss_reason'),d['prospect_id']))
             c.commit(); sid=cur.lastrowid
-    except Exception as e:
+    except sqlite3.IntegrityError as e:
         if 'UNIQUE' in str(e): raise APIError(409,'El prospecto ya tiene una venta')
         raise APIError(400,'Referencias o valores inválidos')
     return 201,query('SELECT * FROM sales WHERE id=?',(sid,),one=True)

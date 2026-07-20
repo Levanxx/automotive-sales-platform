@@ -28,13 +28,18 @@ def update(h, id):
     if not item: raise APIError(404, 'Prospecto no encontrado')
     stage = d.get('stage', item['stage'])
     if stage not in STAGES: raise APIError(400, 'Etapa inválida')
-    outcome = d.get('outcome', item.get('outcome'))
-    loss_reason = d.get('loss_reason', item.get('loss_reason'))
-    execute("UPDATE prospects SET stage=?,outcome=?,loss_reason=?,last_activity=CURRENT_TIMESTAMP WHERE id=?",
-            (stage, outcome, loss_reason, id))
+    if item['stage'] == 'closed': raise APIError(409, 'El prospecto ya está cerrado')
+    if stage == 'closed':
+        raise APIError(400, 'El cierre se registra mediante una venta realizada o fallida')
+    if 'outcome' in d or 'loss_reason' in d:
+        raise APIError(400, 'El resultado y motivo se registran mediante el servicio de ventas')
+    execute("UPDATE prospects SET stage=?,last_activity=CURRENT_TIMESTAMP WHERE id=?", (stage, id))
     return 200, query('SELECT * FROM prospects WHERE id=?', (id,), one=True)
 
 def inactive(h):
-    return 200,query("SELECT * FROM prospects WHERE stage!='closed' AND julianday('now')-julianday(last_activity)>=?",(int(h.headers.get('X-Inactivity-Days','3')),))
+    try: days=int(h.headers.get('X-Inactivity-Days','3'))
+    except (TypeError, ValueError): raise APIError(400, 'X-Inactivity-Days debe ser un entero positivo')
+    if days < 1: raise APIError(400, 'X-Inactivity-Days debe ser un entero positivo')
+    return 200,query("SELECT * FROM prospects WHERE stage!='closed' AND julianday('now')-julianday(last_activity)>=?",(days,))
 Prospects.routes={('GET','/prospects'):list_all,('GET','/prospects/inactive'):inactive,('GET','/prospects/{id}'):get_one,('POST','/prospects'):create,('PATCH','/prospects/{id}'):update}
 if __name__=='__main__': initialize(); serve(Prospects,8001)

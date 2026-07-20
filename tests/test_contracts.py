@@ -43,6 +43,8 @@ class ContractTests(unittest.TestCase):
         execute("INSERT INTO prospects(name,email,phone,vehicle_interest,stage,seller_id,last_activity) VALUES('Inactivo','i@x.pe','1','Auto','initial',1,'2020-01-01')")
         result=inactive(Fake(headers={'X-Inactivity-Days':'3'}))[1]
         self.assertTrue(any(x['name']=='Inactivo' for x in result))
+        with self.assertRaises(APIError): inactive(Fake(headers={'X-Inactivity-Days':'no'}))
+        with self.assertRaises(APIError): inactive(Fake(headers={'X-Inactivity-Days':'0'}))
     def test_n8n_workflows_are_importable(self):
         root=Path(__file__).parents[1]/'n8n'
         for path in root.glob('*.json'):

@@ -12,9 +12,14 @@ ORDER BY i.id DESC''')
 def create(h):
 
     d=h._body(); required(d,'sale_id','type','expected_premium','status')
-    if d['expected_premium'] < 0: raise APIError(400, 'La prima esperada no puede ser negativa')
+    expected=d['expected_premium']; actual=d.get('actual_premium')
+    if isinstance(expected,bool) or not isinstance(expected,(int,float)) or expected < 0:
+        raise APIError(400, 'La prima esperada debe ser un número no negativo')
+    if actual is not None and (isinstance(actual,bool) or not isinstance(actual,(int,float)) or actual < 0):
+        raise APIError(400, 'La prima real debe ser un número no negativo')
     
     if d['status'] not in ('prospected', 'sold'): raise APIError(400, 'Estado inválido')
+    if d['status']=='sold' and actual is None: raise APIError(400, 'La prima real es obligatoria para un seguro vendido')
     
     sale=query("SELECT * FROM sales WHERE id=? AND status='completed'",(d['sale_id'],),one=True)
     if not sale: raise APIError(400,'El seguro requiere una venta efectiva')

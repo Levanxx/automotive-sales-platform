@@ -19,6 +19,8 @@ class ServicesTest(unittest.TestCase):
     def test_prospect_lifecycle(self):
         p=self.prospect('life'); self.assertEqual(p['stage'],'initial')
         result=update(Fake({'stage':'negotiation'}),str(p['id']))[1]; self.assertEqual(result['stage'],'negotiation')
+        with self.assertRaises(APIError): update(Fake({'stage':'closed'}),str(p['id']))
+        with self.assertRaises(APIError): update(Fake({'outcome':'won'}),str(p['id']))
     def test_validation(self):
         with self.assertRaises(APIError): create_prospect(Fake({'name':'x'}))
         p=self.prospect('badstage')
@@ -32,9 +34,16 @@ class ServicesTest(unittest.TestCase):
     def test_failed_sale_requires_reason(self):
         p=self.prospect('lost')
         with self.assertRaises(APIError): create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':2,'status':'failed'}))
+    def test_sale_requires_assigned_seller_and_numeric_amount(self):
+        p=self.prospect('seller')
+        with self.assertRaises(APIError): create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':2,'amount':2,'status':'completed'}))
+        with self.assertRaises(APIError): create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':'2','status':'completed'}))
+    def test_insurance_validates_actual_premium(self):
+        p=self.prospect('premium'); sale=create_sale(Fake({'prospect_id':p['id'],'vehicle_id':1,'seller_id':1,'amount':25000,'status':'completed'}))[1]
+        with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'actual_premium':-1,'status':'sold'}))
+        with self.assertRaises(APIError): create_insurance(Fake({'sale_id':sale['id'],'type':'Todo riesgo','expected_premium':100,'status':'sold'}))
     def test_metrics_and_conversion(self):
         data=metrics(Fake())[1]; self.assertIn('conversion_rate',data); self.assertIsInstance(data['funnel'],list)
         self.assertEqual(conversion(Fake())[0],200)
 
 if __name__=='__main__': unittest.main()
-
